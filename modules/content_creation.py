@@ -35,6 +35,11 @@ def create_posts(agents, params: dict, rng: np.random.Generator):
             agents.at[i, "C_t"] = 0
             continue
 
+        if u_plus >= 0 and u_minus >= 0:
+            if abs(u_plus - u_minus) <= params["epsilon_ambiguity"]:
+                agents.at[i, "C_t"] = 0
+                continue
+
         agents.at[i, "C_t"] = 1
         stance = 1 if u_plus >= u_minus else -1
 

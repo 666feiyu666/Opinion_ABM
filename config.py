@@ -36,6 +36,7 @@ DEFAULT_PARAMS = {
     "beta4": 0.70,
     "c0": 0.55,
     "epsilon_std": 0.15,
+    "epsilon_ambiguity": 0.5, 
     # Style-choice utility: constructive
     "gamma0": 0.15,
     "gamma1": 0.55,
