@@ -51,6 +51,18 @@ def diffuse_posts(g_current, agents, blocks: dict, posts: dict, params: dict, rn
     agents["M_nT_t"] = 0.0
 
     for viewer in range(n_agents):
+        if len(exposure_sets[viewer]) > params.get("max_read_capacity", float('inf')):
+            exposure_sets[viewer].sort(
+                key=lambda p: agents.at[p["creator"], "F_t"], 
+                reverse=True
+            )
+            
+            dropped_posts = exposure_sets[viewer][params["max_read_capacity"]:]
+            for post in dropped_posts:
+                exposure_matrix[(viewer, post["creator"])] = 0
+                
+            exposure_sets[viewer] = exposure_sets[viewer][:params["max_read_capacity"]]
+            
         m_pc = 0.0
         m_pt = 0.0
         m_nc = 0.0
@@ -66,10 +78,5 @@ def diffuse_posts(g_current, agents, blocks: dict, posts: dict, params: dict, rn
                 m_nc += weight
             elif post["x"] == -1 and post["y"] == "T":
                 m_nt += weight
-
-        agents.at[viewer, "M_pC_t"] = m_pc
-        agents.at[viewer, "M_pT_t"] = m_pt
-        agents.at[viewer, "M_nC_t"] = m_nc
-        agents.at[viewer, "M_nT_t"] = m_nt
 
     return agents, exposure_sets, exposure_matrix

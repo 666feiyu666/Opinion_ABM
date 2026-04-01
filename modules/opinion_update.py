@@ -18,21 +18,23 @@ def update_opinions(agents, params: dict):
             attenuate = row["M_pC_t"]
             backfire = row["M_pT_t"]
 
+        damping_factor = 1.0 - abs(row["o_t"])
+        
         if row["L"] == 0:
-            opinion_new = (
-                row["o_t"]
-                + params["gamma_R"] * reinforce * direction
+            delta = (
+                params["gamma_R"] * reinforce * direction
                 - params["gamma_A"] * attenuate * direction
                 + params["gamma_B"] * backfire * direction
             )
         else:
-            opinion_new = (
-                row["o_t"]
-                + params["gamma_R_L"] * reinforce * direction
+            delta = (
+                params["gamma_R_L"] * reinforce * direction
                 - params["gamma_A_L"] * attenuate * direction
                 + params["gamma_B_L"] * backfire * direction
             )
 
+        opinion_new = row["o_t"] + damping_factor * delta
+        
         agents.at[i, "o_t1"] = clip_opinion(opinion_new)
 
     agents["s_t1"] = agents["o_t1"].apply(sign_opinion)

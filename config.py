@@ -58,6 +58,7 @@ DEFAULT_PARAMS = {
     "beta0_diff": -3.2,
     "beta1_diff": 0.80,
     "beta2_diff": 0.70,
+    "max_read_capacity":8,
     # Exposure weights
     "w_o": 1.0,
     "w_l": 1.5,
