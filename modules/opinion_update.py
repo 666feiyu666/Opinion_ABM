@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from utils import clip_opinion, sign_opinion
+import numpy as np
 
 
 def update_opinions(agents, params: dict):
@@ -10,13 +11,13 @@ def update_opinions(agents, params: dict):
     for i, row in agents.iterrows():
         direction = row["s_t"]
         if direction == 1:
-            reinforce = row["M_pC_t"] + row["M_pT_t"]
-            attenuate = row["M_nC_t"]
-            backfire = row["M_nT_t"]
+            reinforce = np.log1p(row["M_pC_t"] + row["M_pT_t"])
+            attenuate = np.log1p(row["M_nC_t"])
+            backfire  = np.log1p(row["M_nT_t"])
         else:
-            reinforce = row["M_nC_t"] + row["M_nT_t"]
-            attenuate = row["M_pC_t"]
-            backfire = row["M_pT_t"]
+            reinforce = np.log1p(row["M_nC_t"] + row["M_nT_t"])
+            attenuate = np.log1p(row["M_pC_t"])
+            backfire  = np.log1p(row["M_pT_t"])
 
         damping_factor = 1.0 - abs(row["o_t"])
         

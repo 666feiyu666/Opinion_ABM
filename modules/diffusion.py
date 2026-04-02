@@ -79,4 +79,9 @@ def diffuse_posts(g_current, agents, blocks: dict, posts: dict, params: dict, rn
             elif post["x"] == -1 and post["y"] == "T":
                 m_nt += weight
 
+        agents.at[viewer, "M_pC_t"] = m_pc
+        agents.at[viewer, "M_pT_t"] = m_pt
+        agents.at[viewer, "M_nC_t"] = m_nc
+        agents.at[viewer, "M_nT_t"] = m_nt
+
     return agents, exposure_sets, exposure_matrix
