@@ -55,6 +55,8 @@ def initialize_model(params: dict, seed: int = 42):
     agents["M_nC_prev"] = 0.0
     agents["M_nT_prev"] = 0.0
 
+    agents["confidence"] = 1.0
+
     blocks = {i: set() for i in range(n_agents)}
     pos = nx.spring_layout(g_undirected, seed=seed, k=0.25, iterations=100)
 

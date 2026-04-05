@@ -6,10 +6,10 @@ DEFAULT_SEED = 42
 
 DEFAULT_PARAMS = {
     # Population / network
-    "N": 400,
+    "N": 1000,
     "m_BA": 3,
-    "leader_in_degree_threshold": 15,
-    "T_rounds": 10,
+    "leader_in_degree_threshold": 20,
+    "T_rounds": 50,
     # Initial opinion distribution
     "opinion_mean": 0.0,
     "opinion_std": 0.35,
@@ -63,12 +63,12 @@ DEFAULT_PARAMS = {
     "w_o": 1.0,
     "w_l": 1.5,
     # Opinion updating
-    "gamma_R": 0.05,
-    "gamma_A": 0.04,
-    "gamma_B": 0.06,
-    "gamma_R_L": 0.03,
-    "gamma_A_L": 0.02,
-    "gamma_B_L": 0.03,
+    "gamma_R": 0.010,       
+    "gamma_A": 0.008,       
+    "gamma_B": 0.012,       
+    "gamma_R_L": 0.006,     
+    "gamma_A_L": 0.004,
+    "gamma_B_L": 0.006,
     # Creator evaluation
     "a1": 1.0,
     "a2": 0.6,
@@ -77,10 +77,10 @@ DEFAULT_PARAMS = {
     "b_T": 0.5,
     "b_O": 0.4,
     "b_TO": 0.8,
-    "lambda_V": 1.0,
+    "lambda_V": 0.8,   
     "lambda_K": 1.0,
     "lambda_L": 0.5,
-    "theta_F": 1.0,
+    "theta_F": 3.5,
 }
 
 
