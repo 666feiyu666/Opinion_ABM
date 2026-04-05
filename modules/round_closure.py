@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from metrics import compute_extremist_ratio, compute_homophily_ratio, compute_opinion_variance, compute_sign_modularity
+
 
 def finalize_round(g_next, agents, exposure_sets: dict, posts: dict, params: dict):
     agents = agents.copy()
@@ -48,6 +50,10 @@ def finalize_round(g_next, agents, exposure_sets: dict, posts: dict, params: dic
         "avg_exposure_size": float(np.mean([len(exposure_sets[i]) for i in range(n_agents)])),
         "mean_opinion": float(agents["o_t"].mean()),
         "std_opinion": float(agents["o_t"].std()),
+        "opinion_variance": compute_opinion_variance(agents),
+        "extremist_ratio": compute_extremist_ratio(agents),
+        "homophily_ratio": compute_homophily_ratio(g_next),
+        "sign_modularity": compute_sign_modularity(g_next),
         "edge_count": int(g_next.number_of_edges()),
     }
     return g_next, agents, summary

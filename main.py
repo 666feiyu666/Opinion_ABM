@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from config import DEFAULT_SEED, make_params
 from initialization import initialize_model
-from metrics import build_history_frame
+from metrics import build_history_frame, build_opinion_trajectory_frame, summarize_final_state
 from modules.content_creation import create_posts
 from modules.diffusion import diffuse_posts
 from modules.network_update import adapt_network
@@ -49,7 +49,23 @@ def run_one_round(graph, agents, blocks: dict, params: dict, rng):
     return graph_next, agents_next, posts, exposure_sets, summary
 
 
-def run_simulation(params: dict | None = None, seed: int = DEFAULT_SEED, rounds: int | None = None):
+def _capture_opinion_snapshot(agents, round_number: int) -> list[dict]:
+    return [
+        {
+            "round": round_number,
+            "node": int(node),
+            "opinion": float(opinion),
+        }
+        for node, opinion in agents["o_t"].items()
+    ]
+
+
+def run_simulation(
+    params: dict | None = None,
+    seed: int = DEFAULT_SEED,
+    rounds: int | None = None,
+    track_opinions: bool = False,
+):
     sim_params = make_params(params)
     if rounds is not None:
         sim_params["T_rounds"] = rounds
@@ -60,6 +76,10 @@ def run_simulation(params: dict | None = None, seed: int = DEFAULT_SEED, rounds:
     round_records = []
     all_posts_by_round = {}
     all_exposure_sets_by_round = {}
+    opinion_snapshots = []
+
+    if track_opinions:
+        opinion_snapshots.extend(_capture_opinion_snapshot(agents, round_number=0))
 
     for round_number in range(1, sim_params["T_rounds"] + 1):
         graph, agents, posts, exposure_sets, summary = run_one_round(
@@ -73,9 +93,12 @@ def run_simulation(params: dict | None = None, seed: int = DEFAULT_SEED, rounds:
         round_records.append(summary)
         all_posts_by_round[round_number] = posts
         all_exposure_sets_by_round[round_number] = exposure_sets
+        if track_opinions:
+            opinion_snapshots.extend(_capture_opinion_snapshot(agents, round_number=round_number))
 
     history_df = build_history_frame(round_records)
     graph_updated = prepare_graph_for_visualization(graph, agents)
+    final_state = summarize_final_state(graph_updated, agents)
 
     return {
         "params": sim_params,
@@ -87,9 +110,11 @@ def run_simulation(params: dict | None = None, seed: int = DEFAULT_SEED, rounds:
         "blocks": blocks,
         "pos": pos,
         "history_df": history_df,
+        "final_state": final_state,
         "round_records": round_records,
         "all_posts_by_round": all_posts_by_round,
         "all_exposure_sets_by_round": all_exposure_sets_by_round,
+        "opinion_trajectory_df": build_opinion_trajectory_frame(opinion_snapshots),
     }
 
 
