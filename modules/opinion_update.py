@@ -9,7 +9,7 @@ def update_opinions(agents, params: dict):
     agents["o_t1"] = agents["o_t"].copy()
 
     # 获取卷入度极点阈值（如果在 config.py 中没有定义，则默认为 0.3）
-    inv_threshold = params.get("involvement_threshold", 0)
+    inv_threshold = params.get("involvement_threshold", 0.5)
 
     # 设定环境信号的基础精度（可以作为一个超参，比如 0.5）
     # tau_env 越大，代表每次看到的信息说服力越强

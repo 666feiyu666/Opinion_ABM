@@ -9,7 +9,7 @@ DEFAULT_PARAMS = {
     "N": 1000,
     "m_BA": 3,
     "leader_in_degree_threshold": 20,
-    "T_rounds": 80,
+    "T_rounds": 60,
     # Initial opinion distribution
     "opinion_mean": 0.0,
     "opinion_std": 0.35,
@@ -86,7 +86,7 @@ DEFAULT_PARAMS = {
     # Attention / Interest decay (新增参数)
     # ==========================================
     "base_create_prob": 1.0,   # 基准发帖概率（如果想降低全周期的发帖量，可以调低，如 0.8）
-    "attention_decay": 0.05,   # 注意力衰减指数（值越大衰减越快，可根据需要调整）
+    "attention_decay": 0.01,   # 注意力衰减指数（值越大衰减越快，可根据需要调整）
 }
 
 
