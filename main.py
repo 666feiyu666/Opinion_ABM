@@ -24,11 +24,13 @@ def prepare_agents_for_round(graph, agents, params: dict):
     return agents
 
 
-def run_one_round(graph, agents, blocks: dict, params: dict, rng):
+# 增加 current_round 参数并向下传递
+def run_one_round(graph, agents, blocks: dict, params: dict, rng, current_round: int = 1):
     graph_current = graph.copy()
     agents_round = prepare_agents_for_round(graph_current, agents, params)
     agents_round = apply_origination(agents_round, params, rng)
-    agents_round, posts = create_posts(agents_round, params, rng)
+    # 将 current_round 传递给 create_posts
+    agents_round, posts = create_posts(agents_round, params, rng, current_round)
     agents_round, exposure_sets, _ = diffuse_posts(
         graph_current,
         agents_round,
@@ -82,12 +84,14 @@ def run_simulation(
         opinion_snapshots.extend(_capture_opinion_snapshot(agents, round_number=0))
 
     for round_number in range(1, sim_params["T_rounds"] + 1):
+        # 显式传入 current_round=round_number
         graph, agents, posts, exposure_sets, summary = run_one_round(
             graph,
             agents,
             blocks,
             sim_params,
             rng,
+            current_round=round_number
         )
         summary["round"] = round_number
         round_records.append(summary)
