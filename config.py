@@ -9,7 +9,7 @@ DEFAULT_PARAMS = {
     "N": 1000,
     "m_BA": 3,
     "leader_in_degree_threshold": 20,
-    "T_rounds": 50,
+    "T_rounds": 80,
     # Initial opinion distribution
     "opinion_mean": 0.0,
     "opinion_std": 0.35,
