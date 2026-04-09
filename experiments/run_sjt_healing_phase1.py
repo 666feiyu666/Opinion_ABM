@@ -25,17 +25,27 @@ SWEEP_THRESHOLDS = [0.1, 0.3, 0.5, 0.7, 0.9]
 CONTRAST_THRESHOLDS = (0.2, 0.8)
 
 
-def phase1_baseline_overrides(rounds: int, involvement_threshold: float = 0.1) -> dict:
+def phase1_baseline_overrides(rounds: int, tolerance_threshold: float = 0.1) -> dict:
     return {
         "T_rounds": rounds,
-        "involvement_threshold": involvement_threshold,
+        "tolerance_threshold": tolerance_threshold,
         # Keep single-round updates in a smooth regime.
-        "gamma_R": 0.05,
-        "gamma_A": 0.04,
-        "gamma_B": 0.06,
-        "gamma_R_L": 0.03,
-        "gamma_A_L": 0.02,
-        "gamma_B_L": 0.03,
+        "omega_pC_in": 0.05,
+        "omega_pT_in": 0.01,
+        "omega_nC_in": -0.04,
+        "omega_nT_in": 0.01,
+        "omega_pC_out": 0.08,
+        "omega_pT_out": 0.02,
+        "omega_nC_out": -0.005,
+        "omega_nT_out": 0.06,
+        "omega_pC_in_L": 0.03,
+        "omega_pT_in_L": 0.008,
+        "omega_nC_in_L": -0.025,
+        "omega_nT_in_L": 0.008,
+        "omega_pC_out_L": 0.05,
+        "omega_pT_out_L": 0.015,
+        "omega_nC_out_L": -0.003,
+        "omega_nT_out_L": 0.035,
         # Keep attention capacity in a human-bounded range.
         "max_read_capacity": 8,
         # Maintain moderate algorithmic toxicity as the polarization engine.
@@ -76,8 +86,8 @@ def aggregate_sweep(raw_df: pd.DataFrame) -> pd.DataFrame:
         "final_edge_count": "edge_count",
     }
 
-    for threshold, threshold_df in raw_df.groupby("involvement_threshold"):
-        row = {"involvement_threshold": float(threshold)}
+    for threshold, threshold_df in raw_df.groupby("tolerance_threshold"):
+        row = {"tolerance_threshold": float(threshold)}
         for column in metric_columns:
             metric_summary = summarize_metric_distribution(threshold_df[column].tolist())
             metric_name = rename_map[column]
@@ -89,7 +99,7 @@ def aggregate_sweep(raw_df: pd.DataFrame) -> pd.DataFrame:
             row[f"{metric_name}_n"] = metric_summary["n"]
         summary_rows.append(row)
 
-    summary_df = pd.DataFrame(summary_rows).sort_values("involvement_threshold").reset_index(drop=True)
+    summary_df = pd.DataFrame(summary_rows).sort_values("tolerance_threshold").reset_index(drop=True)
     baseline_variance = float(summary_df.iloc[0]["opinion_variance_mean"])
     baseline_extremism = float(summary_df.iloc[0]["extremist_ratio_mean"])
     summary_df["opinion_variance_drop_vs_baseline"] = baseline_variance - summary_df["opinion_variance_mean"]
@@ -105,7 +115,7 @@ def run_phase1_experiment(
     output_dir = ensure_directory(project_path("outputs", output_subdir))
     seed_values = [DEFAULT_SEED + offset for offset in range(seeds)]
 
-    baseline_params = make_params(phase1_baseline_overrides(rounds=rounds, involvement_threshold=0.1))
+    baseline_params = make_params(phase1_baseline_overrides(rounds=rounds, tolerance_threshold=0.1))
     baseline_result = run_single_condition(
         params=baseline_params,
         seed=DEFAULT_SEED,
@@ -126,19 +136,19 @@ def run_phase1_experiment(
 
     sweep_rows = []
     for threshold in SWEEP_THRESHOLDS:
-        params = make_params(phase1_baseline_overrides(rounds=rounds, involvement_threshold=threshold))
+        params = make_params(phase1_baseline_overrides(rounds=rounds, tolerance_threshold=threshold))
         print(f"Running threshold={threshold:.1f} across {len(seed_values)} seeds...")
         for seed in seed_values:
             result = run_single_condition(params=params, seed=seed, track_opinions=False)
             sweep_rows.append(
                 {
                     "seed": int(seed),
-                    "involvement_threshold": float(threshold),
+                    "tolerance_threshold": float(threshold),
                     **result["final_state"],
                 }
             )
 
-    sweep_raw_df = pd.DataFrame(sweep_rows).sort_values(["involvement_threshold", "seed"]).reset_index(drop=True)
+    sweep_raw_df = pd.DataFrame(sweep_rows).sort_values(["tolerance_threshold", "seed"]).reset_index(drop=True)
     sweep_summary_df = aggregate_sweep(sweep_raw_df)
     sweep_raw_df.to_csv(output_dir / "sweep_raw.csv", index=False)
     sweep_summary_df.to_csv(output_dir / "sweep_summary.csv", index=False)
@@ -148,12 +158,12 @@ def run_phase1_experiment(
 
     pathology_threshold, healing_threshold = CONTRAST_THRESHOLDS
     pathology_result = run_single_condition(
-        params=make_params(phase1_baseline_overrides(rounds=rounds, involvement_threshold=pathology_threshold)),
+        params=make_params(phase1_baseline_overrides(rounds=rounds, tolerance_threshold=pathology_threshold)),
         seed=DEFAULT_SEED,
         track_opinions=False,
     )
     healing_result = run_single_condition(
-        params=make_params(phase1_baseline_overrides(rounds=rounds, involvement_threshold=healing_threshold)),
+        params=make_params(phase1_baseline_overrides(rounds=rounds, tolerance_threshold=healing_threshold)),
         seed=DEFAULT_SEED,
         track_opinions=False,
     )

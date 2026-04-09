@@ -43,7 +43,7 @@ def run_baseline():
     fig.savefig(output_dir / "network_homophily.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-    fig, _ = plot_final_opinion_distribution(results["agents"])
+    fig, _ = plot_final_opinion_distribution(results["agents"], params=params)
     fig.savefig(output_dir / "opinion_distribution.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 

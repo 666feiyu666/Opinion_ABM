@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from utils import sign_opinion, tanh_mapping
+from utils import sample_stance_from_opinion, tanh_mapping
 
 
 def initialize_model(params: dict, seed: int = 42):
@@ -37,7 +37,16 @@ def initialize_model(params: dict, seed: int = 42):
         size=n_agents,
     )
     agents["o_t"] = np.clip(opinions, -1.0, 1.0)
-    agents["s_t"] = agents["o_t"].apply(sign_opinion)
+    agents["confidence"] = 1.0
+    agents["s_t"] = agents.apply(
+        lambda row: sample_stance_from_opinion(
+            opinion=row["o_t"],
+            confidence=row["confidence"],
+            eta_expression=params.get("eta_expression", 1.0),
+            rng=rng_local,
+        ),
+        axis=1,
+    )
 
     agents["Abar"] = rng_local.uniform(
         params["Abar_low"],
@@ -54,8 +63,6 @@ def initialize_model(params: dict, seed: int = 42):
     agents["M_pT_prev"] = 0.0
     agents["M_nC_prev"] = 0.0
     agents["M_nT_prev"] = 0.0
-
-    agents["confidence"] = 1.0
 
     blocks = {i: set() for i in range(n_agents)}
     pos = nx.spring_layout(g_undirected, seed=seed, k=0.25, iterations=100)

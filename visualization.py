@@ -80,12 +80,40 @@ def plot_network_and_homophily(graph, pos):
     return fig, axes
 
 
-def plot_final_opinion_distribution(agents):
+def plot_final_opinion_distribution(agents, params: dict | None = None, bins: int = 25):
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(agents["o_t"], bins=25, edgecolor="black")
+    counts, bin_edges, _ = ax.hist(
+        agents["o_t"],
+        bins=bins,
+        edgecolor="black",
+        alpha=0.75,
+        label="Final opinions",
+    )
+
+    if params is not None:
+        initial_mean = float(params.get("opinion_mean", 0.0))
+        initial_std = float(params.get("opinion_std", 0.0))
+        if initial_std > 0:
+            x_values = np.linspace(-1.0, 1.0, 400)
+            bin_width = bin_edges[1] - bin_edges[0]
+            density = (
+                np.exp(-0.5 * ((x_values - initial_mean) / initial_std) ** 2)
+                / (initial_std * np.sqrt(2.0 * np.pi))
+            )
+            scaled_density = len(agents) * bin_width * density
+            ax.plot(
+                x_values,
+                scaled_density,
+                color="#dc2626",
+                linewidth=2.2,
+                linestyle="--",
+                label="Initial normal curve",
+            )
+
     ax.set_title("Final Latent Opinion Distribution After Simulation")
     ax.set_xlabel("Latent Opinion")
     ax.set_ylabel("Number of Agents")
+    ax.legend()
     ax.grid(alpha=0.2)
     fig.tight_layout()
     return fig, ax
@@ -212,7 +240,7 @@ def plot_baseline_validation(history_df, opinion_trajectory_df, graph, pos, samp
 def plot_healing_curves(sweep_summary_df):
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5))
 
-    x_values = sweep_summary_df["involvement_threshold"]
+    x_values = sweep_summary_df["tolerance_threshold"]
 
     ax_left = axes[0]
     ax_left.plot(
@@ -229,7 +257,7 @@ def plot_healing_curves(sweep_summary_df):
         color="#93c5fd",
         alpha=0.25,
     )
-    ax_left.set_xlabel("involvement_threshold")
+    ax_left.set_xlabel("tolerance_threshold")
     ax_left.set_ylabel("Final opinion variance", color="#1d4ed8")
     ax_left.tick_params(axis="y", labelcolor="#1d4ed8")
     ax_left.grid(alpha=0.2)
@@ -285,7 +313,7 @@ def plot_healing_curves(sweep_summary_df):
         color="#a7f3d0",
         alpha=0.22,
     )
-    ax_homophily.set_xlabel("involvement_threshold")
+    ax_homophily.set_xlabel("tolerance_threshold")
     ax_homophily.set_ylabel("Network segregation")
     ax_homophily.set_title("Network Echo-Chamber Decay")
     ax_homophily.grid(alpha=0.2)

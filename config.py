@@ -6,13 +6,13 @@ DEFAULT_SEED = 42
 
 DEFAULT_PARAMS = {
     # Population / network
-    "N": 1000,
+    "N": 2000,
     "m_BA": 3,
     "leader_in_degree_threshold": 20,
-    "T_rounds": 60,
+    "T_rounds": 30,
     # Initial opinion distribution
     "opinion_mean": 0.0,
-    "opinion_std": 0.35,
+    "opinion_std": 0.5,
     # Activity
     "Abar_low": 0.2,
     "Abar_high": 0.8,
@@ -24,10 +24,11 @@ DEFAULT_PARAMS = {
     # Opinion-expression mapping
     "kappa": 2.0,
     # Content-chain origination
-    "alpha0": -2.0,
+    "alpha0": -2.25,
     "alpha1": 1.8,
     "alpha2": 1.2,
     "alpha3": 0.25,
+    "originator_prob_cap": 0.30,
     # Stance-choice utility
     "alpha_B": 1.5,
     "beta1": 0.60,
@@ -63,12 +64,29 @@ DEFAULT_PARAMS = {
     "w_o": 1.0,
     "w_l": 1.5,
     # Opinion updating
-    "gamma_R": 0.010,       
-    "gamma_A": 0.008,       
-    "gamma_B": 0.012,       
-    "gamma_R_L": 0.006,     
-    "gamma_A_L": 0.004,
-    "gamma_B_L": 0.006,
+    "tolerance_threshold": 0.00,
+    "tau_env": 0.50,
+    "eta_expression": 1.00,
+    "max_confidence": 50.0,
+    # Inside tolerance range: weaker directional reinforcement, stronger constructive pullback.
+    "omega_pC_in": 0.050,
+    "omega_pT_in": 0.010,
+    "omega_nC_in": -0.040,
+    "omega_nT_in": 0.010,
+    # Outside tolerance range: stronger reinforcement and stronger backfire.
+    "omega_pC_out": 0.080,
+    "omega_pT_out": 0.020,
+    "omega_nC_out": -0.005,
+    "omega_nT_out": 0.050,
+    # Leaders follow the same structure with a lower response magnitude.
+    "omega_pC_in_L": 0.035,
+    "omega_pT_in_L": 0.008,
+    "omega_nC_in_L": -0.028,
+    "omega_nT_in_L": 0.008,
+    "omega_pC_out_L": 0.055,
+    "omega_pT_out_L": 0.015,
+    "omega_nC_out_L": -0.003,
+    "omega_nT_out_L": 0.035,
     # Creator evaluation
     "a1": 1.0,
     "a2": 0.6,
@@ -81,12 +99,26 @@ DEFAULT_PARAMS = {
     "lambda_K": 1.0,
     "lambda_L": 0.5,
     "theta_F": 3.5,
+    "network_in_zone_contact_bonus": 0.30,
+    "network_in_zone_opposite_constructive_bonus": 0.20,
+    "network_in_zone_opposite_toxic_bonus": 0.15,
+    "network_out_zone_opposite_penalty": 1.00,
+    "network_out_zone_toxic_penalty": 0.80,
+    "network_out_zone_disconnect_bias": 0.80,
 
     # ==========================================
     # Attention / Interest decay (新增参数)
     # ==========================================
-    "base_create_prob": 1.0,   # 基准发帖概率（如果想降低全周期的发帖量，可以调低，如 0.8）
-    "attention_decay": 0.01,   # 注意力衰减指数（值越大衰减越快，可根据需要调整）
+    "base_create_prob": 1.0,   # 基准发帖概率（长期上限）
+    "attention_decay": 0.005,   # 注意力衰减指数（值越大衰减越快，可根据需要调整）
+    "creation_warmup_rounds": 8,
+    "creation_warmup_floor": 0.40,
+    "stance_feedback_warmup_rounds": 12,
+    "stance_feedback_floor": 0.15,
+    "style_feedback_warmup_rounds": 10,
+    "style_feedback_floor": 0.30,
+    "non_involved_creation_floor": 0.25,
+    "non_involved_creation_shape": 1.5,
 }
 
 

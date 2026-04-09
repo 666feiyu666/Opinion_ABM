@@ -9,7 +9,7 @@ from modules.network_update import adapt_network
 from modules.opinion_update import update_opinions
 from modules.origination import apply_origination
 from modules.round_closure import finalize_round
-from utils import set_random_seed, sign_opinion, tanh_mapping
+from utils import set_random_seed, tanh_mapping
 from visualization import prepare_graph_for_visualization
 
 
@@ -19,7 +19,6 @@ def prepare_agents_for_round(graph, agents, params: dict):
     agents["O_t"] = 0
     agents["C_t"] = 0
     agents["F_t"] = [graph.in_degree(i) for i in range(n_agents)]
-    agents["s_t"] = agents["o_t"].apply(sign_opinion)
     agents["m_t"] = agents["o_t"].apply(lambda x: tanh_mapping(x, params["kappa"]))
     return agents
 
@@ -39,7 +38,7 @@ def run_one_round(graph, agents, blocks: dict, params: dict, rng, current_round:
         params,
         rng,
     )
-    agents_round = update_opinions(agents_round, params)
+    agents_round = update_opinions(agents_round, params, rng)
     graph_next = adapt_network(graph_current, agents_round, exposure_sets, posts, params, rng)
     graph_next, agents_next, summary = finalize_round(
         graph_next,

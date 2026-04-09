@@ -32,7 +32,27 @@ def clip_opinion(x):
 
 
 def sign_opinion(x):
+    # Legacy helper retained for compatibility with external notebooks/scripts.
     return 1 if x >= 0 else -1
+
+
+def sample_stance_from_opinion(
+    opinion: float,
+    confidence: float,
+    eta_expression: float = 1.0,
+    rng: np.random.Generator | None = None,
+) -> int:
+    opinion_clipped = clip_opinion(opinion)
+    probability_positive = (opinion_clipped + 1.0) / 2.0
+    probability_positive = float(np.clip(probability_positive, 0.0, 1.0))
+
+    concentration = max(0.0, eta_expression * float(confidence))
+    alpha = 1.0 + concentration * probability_positive
+    beta = 1.0 + concentration * (1.0 - probability_positive)
+    stance_probability = alpha / (alpha + beta)
+
+    rng_local = rng if rng is not None else np.random.default_rng()
+    return 1 if rng_local.random() < stance_probability else -1
 
 
 def tanh_mapping(o, kappa):
