@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from utils import sample_stance_from_opinion, tanh_mapping
+from utils import sample_stance_from_opinion, sign_opinion, tanh_mapping
 
 
 def initialize_model(params: dict, seed: int = 42):
@@ -37,16 +37,37 @@ def initialize_model(params: dict, seed: int = 42):
         size=n_agents,
     )
     agents["o_t"] = np.clip(opinions, -1.0, 1.0)
-    agents["confidence"] = 1.0
+    agents["tau_t"] = rng_local.normal(
+        loc=params["tau_init_mean"],
+        scale=params["tau_init_std"],
+        size=n_agents,
+    )
+
+    is_leader = agents["L"] == 1
+    agents.loc[is_leader, "tau_t"] = rng_local.normal(
+        loc=params["tau_L_init_mean"],
+        scale=params["tau_L_init_std"],
+        size=int(is_leader.sum()),
+    )
+
+    # 两极化领袖：将领袖的潜在意见强制推向光谱两端，作为极化扩散的“引擎”。
+    leader_signs = rng_local.choice([-1.0, 1.0], size=int(is_leader.sum()))
+    leader_magnitudes = rng_local.uniform(0.6, 0.9, size=int(is_leader.sum()))
+    agents.loc[is_leader, "o_t"] = leader_signs * leader_magnitudes
+
+    agents["tau_t"] = np.clip(agents["tau_t"], 0.1, params["tau_max"])
+    agents["tau_t1"] = agents["tau_t"].copy()
+    agents["confidence"] = agents["tau_t"].copy()
     agents["s_t"] = agents.apply(
         lambda row: sample_stance_from_opinion(
             opinion=row["o_t"],
-            confidence=row["confidence"],
+            confidence=row["tau_t"],
             eta_expression=params.get("eta_expression", 1.0),
             rng=rng_local,
         ),
         axis=1,
     )
+    agents.loc[is_leader, "s_t"] = agents.loc[is_leader, "o_t"].apply(sign_opinion)
 
     agents["Abar"] = rng_local.uniform(
         params["Abar_low"],

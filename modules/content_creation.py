@@ -37,7 +37,6 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
     # ==================== 1. 读取参数 ====================
     # 引入温度参数
     beta_temp = params.get("temperature_C", 1.0) # 控制 C/T 转变平滑度
-    beta_temp_stance = params.get("temperature_S", 1.0) # 控制 Support/Oppose 转变平滑度
     
     # 引入注意力/兴趣衰减参数 (新增)
     attention_decay = params.get("attention_decay", 0.05)
@@ -99,6 +98,7 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
 
         # 使用动态更新的观点 o_t 作为内部信仰锚点
         current_opinion = row["o_t"]
+        tau_t = float(row["tau_t"]) if "tau_t" in agents.columns else float(row.get("confidence", 1.0))
 
         # 发帖意愿（u）同样使用平滑后的 log 值
         stance_social_plus = (
@@ -114,13 +114,15 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
             - params["beta4"] * log_pT
         )
         u_plus = (
-            params["alpha_B"] * max(current_opinion, 0.0)
+            # 置信度越高，主体越坚持自身潜在意见，越不容易被外部社交压力带偏。
+            params["alpha_B"] * tau_t * max(current_opinion, 0.0)
             + stance_feedback_scale * stance_social_plus
             - params["c0"]
             + eps
         )
         u_minus = (
-            params["alpha_B"] * max(-current_opinion, 0.0)
+            # 对反向潜在意见同理：tau_t 作为“内部定力”乘数，放大内在立场动机。
+            params["alpha_B"] * tau_t * max(-current_opinion, 0.0)
             + stance_feedback_scale * stance_social_minus
             - params["c0"]
             + eps
@@ -137,14 +139,18 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
 
         agents.at[i, "C_t"] = 1
         
-        # ==================== 核心修复：立场(Stance)的概率化映射 ====================
-        # 计算 Agent 产出 Support (+1) 帖子的概率
-        diff_u = np.clip((u_plus - u_minus) / beta_temp_stance, -500, 500)
-        prob_support = 1.0 / (1.0 + np.exp(-diff_u))
-        
-        # 抛硬币决定最终立场，允许“逆风输出”的少数派存在
-        stance = 1 if rng.random() < prob_support else -1
-        # =========================================================================
+        # ==================== 基于 Beta 分布的立场生成 ====================
+        # 将潜在意见映射到 [0, 1]，再结合 tau_t 形成表达时的认知浓度。
+        p_t = float(np.clip((current_opinion + 1.0) / 2.0, 0.0, 1.0))
+        kappa_t = params["kappa"] * tau_t
+        alpha_t = 1.0 + kappa_t * p_t
+        beta_t = 1.0 + kappa_t * (1.0 - p_t)
+
+        # Beta 分布的期望值对应“表达支持帖”的概率；
+        # tau_t 越高，主体的表达越贴近其内在意见，而不是被第一步效用差直接决定。
+        pi_t = alpha_t / (alpha_t + beta_t)
+        stance = 1 if rng.random() < pi_t else -1
+        # ===============================================================
 
         eta_c = rng.normal(0, params["eta_C_std"])
         eta_t = rng.normal(0, params["eta_T_std"])

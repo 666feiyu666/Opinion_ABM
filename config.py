@@ -6,10 +6,10 @@ DEFAULT_SEED = 42
 
 DEFAULT_PARAMS = {
     # Population / network
-    "N": 2000,
+    "N": 1000,
     "m_BA": 3,
-    "leader_in_degree_threshold": 20,
-    "T_rounds": 30,
+    "leader_in_degree_threshold": 15,
+    "T_rounds": 50,
     # Initial opinion distribution
     "opinion_mean": 0.0,
     "opinion_std": 0.5,
@@ -119,6 +119,14 @@ DEFAULT_PARAMS = {
     "style_feedback_floor": 0.30,
     "non_involved_creation_floor": 0.25,
     "non_involved_creation_shape": 1.5,
+    # Bayesian confidence / clarity dynamics
+    "tau_max": 10.0,          # 置信度的绝对上限
+    "tau_env_0": 0.5,         # 环境基础精度系数
+    "theta_conf": 0.5,        # 清晰度指数阈值，决定环境是一边倒还是撕裂
+    "tau_init_mean": 2.0,     # 大众用户的初始置信度均值
+    "tau_init_std": 0.5,      # 大众用户的初始置信度标准差
+    "tau_L_init_mean": 8.0,   # 意见领袖的极高初始置信度均值
+    "tau_L_init_std": 1.0,    # 意见领袖的极高初始置信度标准差
 }
 
 

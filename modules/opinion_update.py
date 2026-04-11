@@ -23,52 +23,85 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
     agents = agents.copy()
     agents["o_t1"] = agents["o_t"].copy()
     agents["s_t1"] = agents["s_t"].copy()
-
-    tolerance_threshold = params.get("tolerance_threshold", 0.00)
-    base_tau_env = params.get("tau_env", 0.5)
-    max_confidence = params.get("max_confidence", 50.0)
+    involvement_threshold = params.get(
+        "involvement_threshold",
+        params.get("tolerance_threshold", 0.00),
+    )
+    tau_max = params.get("tau_max", params.get("max_confidence", 10.0))
+    tau_env_0 = params.get("tau_env_0", params.get("tau_env", 0.5))
+    theta_conf = params.get("theta_conf", 0.5)
     eta_expression = params.get("eta_expression", 1.0)
 
-    for i, row in agents.iterrows():
-        posts_read = row["M_pC_t"] + row["M_pT_t"] + row["M_nC_t"] + row["M_nT_t"]
+    if "tau_t" not in agents.columns:
+        if "confidence" in agents.columns:
+            agents["tau_t"] = agents["confidence"].copy()
+        else:
+            agents["tau_t"] = 1.0
+    agents["tau_t"] = np.clip(agents["tau_t"], 0.1, tau_max)
+    agents["tau_t1"] = agents["tau_t"].copy()
 
+    for i, row in agents.iterrows():
         # Aggregate exposures remain count-based, but are log-saturated before use.
         exposure_pC = np.log1p(row["M_pC_t"])
         exposure_pT = np.log1p(row["M_pT_t"])
         exposure_nC = np.log1p(row["M_nC_t"])
         exposure_nT = np.log1p(row["M_nT_t"])
 
-        zone = _zone_for_opinion(row["o_t"], tolerance_threshold)
+        zone = _zone_for_opinion(row["o_t"], involvement_threshold)
         omega_pC, omega_pT, omega_nC, omega_nT = _coefficient_set(
             params,
             is_leader=bool(row["L"]),
             zone=zone,
         )
 
-        # The current expressed stance anchors the signed push from all exposure types.
-        delta = row["s_t"] * (
-            omega_pC * exposure_pC
-            + omega_pT * exposure_pT
-            + omega_nC * exposure_nC
-            + omega_nT * exposure_nT
-        )
+        # 保留原有 SJT 对数饱和推力：同向曝光强化，异向建设性内容可能缓和，异向攻击性内容可能触发反弹。
+        reinforce = row["s_t"] * (omega_pC * exposure_pC + omega_pT * exposure_pT)
+        attenuate = row["s_t"] * (omega_nC * exposure_nC)
+        backfire = row["s_t"] * (omega_nT * exposure_nT)
+        delta = reinforce + attenuate + backfire
 
         damping_factor = 1.0 - 0.5 * abs(row["o_t"])
-        tau_env = base_tau_env * np.log1p(posts_read)
-        tau_t = float(row["confidence"])
-        bayesian_weight = tau_env / (tau_t + tau_env) if (tau_t + tau_env) > 0 else 0.0
 
-        opinion_new = row["o_t"] + damping_factor * bayesian_weight * delta
+        N_pos = row["M_pC_t"] + row["M_pT_t"]
+        N_neg = row["M_nC_t"] + row["M_nT_t"]
+        N_total = N_pos + N_neg
+
+        # 清晰度指数衡量当前信息环境是否“一边倒”。
+        # 越接近 1，说明接触到的信息越单边清晰；越接近 0，说明环境越撕裂混杂。
+        if N_total > 0:
+            R_clarity = abs(N_pos - N_neg) / N_total
+        else:
+            R_clarity = 0.0
+
+        tau_env = tau_env_0 * np.log1p(N_total)
+        multiplier = R_clarity - theta_conf
+
+        tau_i = float(row["tau_t"])
+        tau_new = tau_i + tau_env * multiplier
+        tau_new = float(np.clip(tau_new, 0.1, tau_max))
+        agents.at[i, "tau_t1"] = tau_new
+
+        # 贝叶斯权重表示主体对外部信息的开放程度。
+        # 当环境信号更“精确”时，外部证据在意见更新中占比更高；
+        # 当主体自身置信度更高时，外部推动会被相对压低。
+        if tau_env > 0:
+            W_i = tau_env / (tau_i + tau_env)
+        else:
+            W_i = 0.0
+
+        opinion_new = row["o_t"] + damping_factor * W_i * delta
         opinion_new = clip_opinion(opinion_new)
-        confidence_new = min(tau_t + tau_env, max_confidence)
 
         agents.at[i, "o_t1"] = opinion_new
-        agents.at[i, "confidence"] = confidence_new
         agents.at[i, "s_t1"] = sample_stance_from_opinion(
             opinion=opinion_new,
-            confidence=confidence_new,
+            confidence=tau_new,
             eta_expression=eta_expression,
             rng=rng,
         )
+
+    # 兼容现有未改动模块：同时维护新旧置信度列。
+    agents["tau_t"] = agents["tau_t1"]
+    agents["confidence"] = agents["tau_t1"]
 
     return agents
