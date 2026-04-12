@@ -7,9 +7,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from config import DEFAULT_SEED, make_params
+from config import DEFAULT_SEED, make_notebook_baseline_params
 from main import run_simulation
 from metrics import format_round_summary
 from utils import ensure_directory, project_path
@@ -22,7 +24,7 @@ from visualization import (
 
 
 def run_baseline():
-    params = make_params()
+    params = make_notebook_baseline_params()
     results = run_simulation(params=params, seed=DEFAULT_SEED)
 
     for _, row in results["history_df"].iterrows():

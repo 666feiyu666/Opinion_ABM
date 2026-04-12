@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/opinion_abm_mpl")
+
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
 import seaborn as sns
 
 from metrics import compute_average_neighbor_opinions
@@ -321,6 +327,150 @@ def plot_healing_curves(sweep_summary_df):
 
     fig.tight_layout()
     return fig, axes
+
+
+def plot_tolerance_sweep_curves(sweep_summary_df):
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
+
+    plot_spec = [
+        (
+            "extremist_ratio",
+            "Extremist Ratio",
+            "Final extremist ratio",
+            "#dc2626",
+            "#fca5a5",
+            (0.0, 1.0),
+        ),
+        (
+            "opinion_variance",
+            "Opinion Variance",
+            "Final opinion variance",
+            "#2563eb",
+            "#93c5fd",
+            None,
+        ),
+        (
+            "moderate_ratio",
+            "Moderate Survival",
+            "Final moderate ratio",
+            "#059669",
+            "#a7f3d0",
+            (0.0, 1.0),
+        ),
+    ]
+
+    x_values = sweep_summary_df["tolerance_threshold"]
+
+    for ax, (metric_key, title, ylabel, line_color, fill_color, y_limits) in zip(axes, plot_spec):
+        ax.plot(
+            x_values,
+            sweep_summary_df[f"{metric_key}_mean"],
+            color=line_color,
+            marker="o",
+            linewidth=2.2,
+        )
+        ax.fill_between(
+            x_values,
+            sweep_summary_df[f"{metric_key}_ci_low"],
+            sweep_summary_df[f"{metric_key}_ci_high"],
+            color=fill_color,
+            alpha=0.28,
+        )
+        ax.set_title(title)
+        ax.set_xlabel("tolerance_threshold")
+        ax.set_ylabel(ylabel)
+        if y_limits is not None:
+            ax.set_ylim(*y_limits)
+        ax.grid(alpha=0.2)
+
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_final_opinion_heatmap(opinion_samples_df, bins: int = 41):
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+
+    heatmap_df = opinion_samples_df.copy()
+    heatmap_df["tolerance_threshold"] = heatmap_df["tolerance_threshold"].astype(float)
+
+    bin_edges = np.linspace(-1.0, 1.0, bins + 1)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+
+    thresholds = sorted(heatmap_df["tolerance_threshold"].unique())
+    density_rows = []
+    for threshold in thresholds:
+        threshold_opinions = heatmap_df.loc[
+            heatmap_df["tolerance_threshold"] == threshold,
+            "opinion",
+        ].to_numpy()
+        counts, _ = np.histogram(threshold_opinions, bins=bin_edges, density=False)
+        total = counts.sum()
+        densities = counts / total if total > 0 else np.zeros_like(counts, dtype=float)
+        density_rows.append(densities)
+
+    density_matrix = np.asarray(density_rows)
+    sns.heatmap(
+        density_matrix,
+        cmap="mako",
+        cbar_kws={"label": "Share of final opinions"},
+        xticklabels=np.round(bin_centers, 2),
+        yticklabels=[f"{threshold:.1f}" for threshold in thresholds],
+        ax=ax,
+    )
+    ax.set_xlabel("Final opinion bin center")
+    ax.set_ylabel("tolerance_threshold")
+    ax.set_title("Final Opinion Distribution Across Tolerance Thresholds")
+
+    xtick_positions = np.linspace(0, len(bin_centers) - 1, 9, dtype=int)
+    ax.set_xticks(xtick_positions + 0.5)
+    ax.set_xticklabels([f"{bin_centers[index]:.2f}" for index in xtick_positions], rotation=0)
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def load_tolerance_sweep_outputs(output_dir: str | Path) -> dict[str, pd.DataFrame]:
+    base_dir = Path(output_dir)
+    return {
+        "sweep_raw_df": pd.read_csv(base_dir / "sweep_raw.csv"),
+        "sweep_summary_df": pd.read_csv(base_dir / "sweep_summary.csv"),
+        "opinion_samples_df": pd.read_csv(base_dir / "final_opinion_samples.csv"),
+    }
+
+
+def build_tolerance_sweep_notebook_table(sweep_summary_df: pd.DataFrame) -> pd.DataFrame:
+    table = sweep_summary_df[
+        [
+            "tolerance_threshold",
+            "extremist_ratio_mean",
+            "extremist_ratio_ci_low",
+            "extremist_ratio_ci_high",
+            "opinion_variance_mean",
+            "opinion_variance_ci_low",
+            "opinion_variance_ci_high",
+            "moderate_ratio_mean",
+            "moderate_ratio_ci_low",
+            "moderate_ratio_ci_high",
+            "mean_abs_opinion_mean",
+            "homophily_ratio_mean",
+        ]
+    ].copy()
+    return table.rename(
+        columns={
+            "tolerance_threshold": "theta_T",
+            "extremist_ratio_mean": "extremist_mean",
+            "extremist_ratio_ci_low": "extremist_ci_low",
+            "extremist_ratio_ci_high": "extremist_ci_high",
+            "opinion_variance_mean": "variance_mean",
+            "opinion_variance_ci_low": "variance_ci_low",
+            "opinion_variance_ci_high": "variance_ci_high",
+            "moderate_ratio_mean": "moderate_mean",
+            "moderate_ratio_ci_low": "moderate_ci_low",
+            "moderate_ratio_ci_high": "moderate_ci_high",
+            "mean_abs_opinion_mean": "mean_abs_opinion",
+            "homophily_ratio_mean": "homophily_mean",
+        }
+    )
 
 
 def plot_pre_post_comparison(pathology_result, healing_result, pathology_threshold: float, healing_threshold: float):

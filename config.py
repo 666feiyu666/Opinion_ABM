@@ -4,6 +4,36 @@ from copy import deepcopy
 
 DEFAULT_SEED = 42
 
+NOTEBOOK_BASELINE_OVERRIDES = {
+    "tolerance_threshold": 0.00,
+    # Wider initial opinion spread.
+    "opinion_std": 0.5,
+    # Lower confidence freezing so polarization can still move.
+    "tau_env": 0.90,
+    "max_confidence": 15.0,
+    # Stronger reinforcement / backfire outside the tolerance zone.
+    "omega_pC_out": 0.12,
+    "omega_pT_out": 0.04,
+    "omega_nT_out": 0.10,
+    "omega_nC_out": 0.00,
+    # Higher exposure volume.
+    "p_O": 0.04,
+    "beta2_diff": 1.00,
+    "max_read_capacity": 12,
+    # Looser warmup, matching the notebook baseline.
+    "creation_warmup_rounds": 2,
+    "stance_feedback_warmup_rounds": 4,
+    "style_feedback_warmup_rounds": 4,
+    "creation_warmup_floor": 0.80,
+    "stance_feedback_floor": 0.70,
+    "style_feedback_floor": 0.70,
+    # Easier echo-chamber rewiring.
+    "theta_F": 2.8,
+    "a4": 1.6,
+    "b_O": 0.6,
+    "b_TO": 1.0,
+}
+
 DEFAULT_PARAMS = {
     # Population / network
     "N": 1000,
@@ -132,6 +162,13 @@ DEFAULT_PARAMS = {
 
 def make_params(overrides: dict | None = None) -> dict:
     params = deepcopy(DEFAULT_PARAMS)
+    if overrides:
+        params.update(overrides)
+    return params
+
+
+def make_notebook_baseline_params(overrides: dict | None = None) -> dict:
+    params = make_params(NOTEBOOK_BASELINE_OVERRIDES)
     if overrides:
         params.update(overrides)
     return params

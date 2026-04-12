@@ -43,9 +43,18 @@ def compute_opinion_variance(agents) -> float:
     return float(np.var(agents["o_t"].to_numpy()))
 
 
+def compute_mean_abs_opinion(agents) -> float:
+    return float(np.mean(np.abs(agents["o_t"].to_numpy())))
+
+
 def compute_extremist_ratio(agents, opinion_threshold: float = 0.7) -> float:
     opinions = agents["o_t"].to_numpy()
     return float(np.mean(np.abs(opinions) > opinion_threshold))
+
+
+def compute_moderate_ratio(agents, moderate_band: float = 0.3) -> float:
+    opinions = agents["o_t"].to_numpy()
+    return float(np.mean(np.abs(opinions) <= moderate_band))
 
 
 def compute_homophily_ratio(graph, neutral_band: float = 0.0) -> float:
@@ -101,6 +110,7 @@ def summarize_final_state(
     graph,
     agents,
     extremist_threshold: float = 0.7,
+    moderate_band: float = 0.3,
     neutral_band: float = 0.0,
 ) -> dict:
     homophily_ratio = compute_homophily_ratio(
@@ -110,10 +120,15 @@ def summarize_final_state(
     return {
         "final_mean_opinion": float(agents["o_t"].mean()),
         "final_std_opinion": float(agents["o_t"].std()),
+        "final_mean_abs_opinion": compute_mean_abs_opinion(agents),
         "final_opinion_variance": compute_opinion_variance(agents),
         "final_extremist_ratio": compute_extremist_ratio(
             agents,
             opinion_threshold=extremist_threshold,
+        ),
+        "final_moderate_ratio": compute_moderate_ratio(
+            agents,
+            moderate_band=moderate_band,
         ),
         "final_homophily_ratio": homophily_ratio,
         "final_cross_cutting_ratio": float(1.0 - homophily_ratio),
