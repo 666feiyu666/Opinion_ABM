@@ -7,6 +7,14 @@ import pandas as pd
 from utils import sample_stance_from_opinion, sign_opinion, tanh_mapping
 
 
+def _leader_signs(rng_local: np.random.Generator, count: int, mode: str) -> np.ndarray:
+    if mode == "positive":
+        return np.ones(count)
+    if mode == "negative":
+        return -np.ones(count)
+    return rng_local.choice([-1.0, 1.0], size=count)
+
+
 def initialize_model(params: dict, seed: int = 42):
     rng_local = np.random.default_rng(seed)
     np.random.seed(seed)
@@ -61,8 +69,13 @@ def initialize_model(params: dict, seed: int = 42):
     )
 
     # 两极化领袖：将领袖的潜在意见强制推向光谱两端，作为极化扩散的“引擎”。
-    leader_signs = rng_local.choice([-1.0, 1.0], size=int(is_leader.sum()))
-    leader_magnitudes = rng_local.uniform(0.6, 0.9, size=int(is_leader.sum()))
+    leader_count = int(is_leader.sum())
+    leader_signs = _leader_signs(
+        rng_local,
+        count=leader_count,
+        mode=str(params.get("leader_opinion_mode", "balanced")).lower(),
+    )
+    leader_magnitudes = rng_local.uniform(0.6, 0.9, size=leader_count)
     agents.loc[is_leader, "o_t"] = leader_signs * leader_magnitudes
 
     agents["tau_t"] = np.clip(agents["tau_t"], 0.1, params["tau_max"])

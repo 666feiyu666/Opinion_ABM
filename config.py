@@ -39,6 +39,34 @@ NOTEBOOK_BASELINE_OVERRIDES = {
     "involvement_decay": 0.10,
 }
 
+SIMPLE_LEADER_INFLUENCE_OVERRIDES = {
+    "tolerance_threshold": 0.00,
+    "involvement_threshold": 0.00,
+    # Calibrate origination so ordinary users start near 0.1 while leaders
+    # remain a clearly stronger content source around 0.3-0.4.
+    "alpha0": -3.35,
+    "alpha2": 1.10,
+    "originator_prob_cap": 0.40,
+    # Leave room for persuasion in the baseline: weaker backfire, stronger
+    # constructive pullback, and a materially higher cost for toxic posting.
+    "omega_nT_out": 0.02,
+    "omega_nT_out_L": 0.015,
+    "omega_nC_out": -0.04,
+    "omega_nC_out_L": -0.025,
+    "delta1": 0.25,
+    "delta2": 0.15,
+    "delta3": 0.15,
+    "c_T": 0.34,
+    # Freeze involvement so the baseline isolates leader-direction effects.
+    "e_init_mean": 1.00,
+    "e_init_std": 0.00,
+    "e_L_init_mean": 1.00,
+    "e_L_init_std": 0.00,
+    "involvement_toxic_gain": 0.00,
+    "involvement_exposure_gain": 0.00,
+    "involvement_decay": 0.00,
+}
+
 DEFAULT_PARAMS = {
     # Population / network
     "N": 1000,
@@ -170,6 +198,7 @@ DEFAULT_PARAMS = {
     "tau_init_std": 0.5,      # 大众用户的初始置信度标准差
     "tau_L_init_mean": 8.0,   # 意见领袖的极高初始置信度均值
     "tau_L_init_std": 1.0,    # 意见领袖的极高初始置信度标准差
+    "leader_opinion_mode": "balanced",
 }
 
 
@@ -182,6 +211,17 @@ def make_params(overrides: dict | None = None) -> dict:
 
 def make_notebook_baseline_params(overrides: dict | None = None) -> dict:
     params = make_params(NOTEBOOK_BASELINE_OVERRIDES)
+    if overrides:
+        params.update(overrides)
+    return params
+
+
+def make_simple_leader_influence_params(
+    leader_opinion_mode: str = "positive",
+    overrides: dict | None = None,
+) -> dict:
+    params = make_notebook_baseline_params(SIMPLE_LEADER_INFLUENCE_OVERRIDES)
+    params["leader_opinion_mode"] = leader_opinion_mode
     if overrides:
         params.update(overrides)
     return params

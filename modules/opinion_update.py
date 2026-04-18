@@ -21,6 +21,26 @@ def _coefficient_set(params: dict, is_leader: bool, zone: str) -> tuple[float, f
     )
 
 
+def _relative_exposures(row) -> tuple[float, float, float, float]:
+    if row["s_t"] >= 0:
+        aligned_constructive = np.log1p(row["M_pC_t"])
+        aligned_toxic = np.log1p(row["M_pT_t"])
+        opposite_constructive = np.log1p(row["M_nC_t"])
+        opposite_toxic = np.log1p(row["M_nT_t"])
+    else:
+        aligned_constructive = np.log1p(row["M_nC_t"])
+        aligned_toxic = np.log1p(row["M_nT_t"])
+        opposite_constructive = np.log1p(row["M_pC_t"])
+        opposite_toxic = np.log1p(row["M_pT_t"])
+
+    return (
+        aligned_constructive,
+        aligned_toxic,
+        opposite_constructive,
+        opposite_toxic,
+    )
+
+
 def update_opinions(agents, params: dict, rng: np.random.Generator):
     agents = agents.copy()
     agents["o_t1"] = agents["o_t"].copy()
@@ -52,11 +72,9 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
     agents["e_t1"] = agents["e_t"].copy()
 
     for i, row in agents.iterrows():
-        # Aggregate exposures remain count-based, but are log-saturated before use.
-        exposure_pC = np.log1p(row["M_pC_t"])
-        exposure_pT = np.log1p(row["M_pT_t"])
-        exposure_nC = np.log1p(row["M_nC_t"])
-        exposure_nT = np.log1p(row["M_nT_t"])
+        # Exposure counts are stored in absolute pro/anti buckets, then remapped here
+        # into aligned/opposite content relative to the viewer's current stance.
+        exposure_pC, exposure_pT, exposure_nC, exposure_nT = _relative_exposures(row)
 
         N_pos = row["M_pC_t"] + row["M_pT_t"]
         N_neg = row["M_nC_t"] + row["M_nT_t"]
