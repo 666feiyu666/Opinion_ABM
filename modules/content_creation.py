@@ -13,20 +13,20 @@ def _warmup_scale(current_round: int, warmup_rounds: float, floor: float) -> flo
 
 
 def _non_involved_creation_scale(
-    opinion: float,
-    tolerance_threshold: float,
+    involvement: float,
+    involvement_threshold: float,
     floor: float,
     shape: float,
 ) -> float:
-    if tolerance_threshold <= 0:
+    if involvement_threshold <= 0:
         return 1.0
 
-    distance = abs(float(opinion))
-    if distance >= tolerance_threshold:
+    level = float(np.clip(involvement, 0.0, 1.0))
+    if level >= involvement_threshold:
         return 1.0
 
-    normalized_distance = distance / tolerance_threshold
-    curved_progress = normalized_distance ** max(shape, 1e-6)
+    normalized_level = level / involvement_threshold
+    curved_progress = normalized_level ** max(shape, 1e-6)
     return float(floor + (1.0 - floor) * curved_progress)
 
 
@@ -41,7 +41,10 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
     # 引入注意力/兴趣衰减参数 (新增)
     attention_decay = params.get("attention_decay", 0.05)
     base_create_prob = params.get("base_create_prob", 1.0)
-    tolerance_threshold = params.get("tolerance_threshold", 0.0)
+    involvement_threshold = params.get(
+        "involvement_threshold",
+        params.get("tolerance_threshold", 0.0),
+    )
     non_involved_creation_floor = params.get("non_involved_creation_floor", 1.0)
     non_involved_creation_shape = params.get("non_involved_creation_shape", 1.0)
     creation_warmup = _warmup_scale(
@@ -74,10 +77,10 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
             continue
 
         # ==================== 3. 疲劳/兴趣衰减判定 ====================
-        # 非卷入区间内，越接近中立点，实际发帖意愿越弱。
+        # 低卷入主体的发帖意愿更弱，卷入被 toxic/总曝光逐轮抬升后才会更积极表达。
         involvement_scale = _non_involved_creation_scale(
-            opinion=row["o_t"],
-            tolerance_threshold=tolerance_threshold,
+            involvement=row.get("e_t", 1.0),
+            involvement_threshold=involvement_threshold,
             floor=non_involved_creation_floor,
             shape=non_involved_creation_shape,
         )
@@ -139,15 +142,23 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
 
         agents.at[i, "C_t"] = 1
         
-        # ==================== 基于 Beta 分布的立场生成 ====================
-        # 将潜在意见映射到 [0, 1]，再结合 tau_t 形成表达时的认知浓度。
-        p_t = float(np.clip((current_opinion + 1.0) / 2.0, 0.0, 1.0))
+        # ==================== 基于效用博弈与 Beta 分布的立场生成 ====================
+        # 1. 计算效用差：支持的效用 vs 反对的效用
+        # （可选）可以引入一个 beta_stance_temp 参数来控制对效用差的敏感度，默认给 1.0
+        beta_stance_temp = params.get("temperature_stance", 1.0) 
+        diff_u = np.clip((u_plus - u_minus) / beta_stance_temp, -500, 500)
+        
+        # 2. 将效用差映射为基础概率期望 p_u
+        # 如果 u_plus 远大于 u_minus，p_u 趋近于 1；反之趋近于 0。
+        p_u = 1.0 / (1.0 + np.exp(-diff_u))
+        
+        # 3. 结合置信度 tau_t 构建 Beta 分布 (保留你原本极佳的“认知浓度”设计)
+        # 此时的 p_u 已经是综合了“内心 o_t”和“外界压力”后的发声意愿期望
         kappa_t = params["kappa"] * tau_t
-        alpha_t = 1.0 + kappa_t * p_t
-        beta_t = 1.0 + kappa_t * (1.0 - p_t)
+        alpha_t = 1.0 + kappa_t * p_u
+        beta_t = 1.0 + kappa_t * (1.0 - p_u)
 
-        # Beta 分布的期望值对应“表达支持帖”的概率；
-        # tau_t 越高，主体的表达越贴近其内在意见，而不是被第一步效用差直接决定。
+        # 4. 抽样
         pi_t = alpha_t / (alpha_t + beta_t)
         stance = 1 if rng.random() < pi_t else -1
         # ===============================================================

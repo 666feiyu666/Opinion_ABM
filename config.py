@@ -6,6 +6,7 @@ DEFAULT_SEED = 42
 
 NOTEBOOK_BASELINE_OVERRIDES = {
     "tolerance_threshold": 0.00,
+    "involvement_threshold": 0.60,
     # Wider initial opinion spread.
     "opinion_std": 0.5,
     # Lower confidence freezing so polarization can still move.
@@ -32,6 +33,10 @@ NOTEBOOK_BASELINE_OVERRIDES = {
     "a4": 1.6,
     "b_O": 0.6,
     "b_TO": 1.0,
+    # Toxicity-first involvement dynamics for the notebook baseline.
+    "involvement_toxic_gain": 0.16,
+    "involvement_exposure_gain": 0.02,
+    "involvement_decay": 0.10,
 }
 
 DEFAULT_PARAMS = {
@@ -149,6 +154,14 @@ DEFAULT_PARAMS = {
     "style_feedback_floor": 0.30,
     "non_involved_creation_floor": 0.25,
     "non_involved_creation_shape": 1.5,
+    "e_init_mean": 0.12,
+    "e_init_std": 0.05,
+    "e_L_init_mean": 0.90,
+    "e_L_init_std": 0.05,
+    "involvement_max": 1.0,
+    "involvement_decay": 0.10,
+    "involvement_toxic_gain": 0.22,
+    "involvement_exposure_gain": 0.04,
     # Bayesian confidence / clarity dynamics
     "tau_max": 10.0,          # 置信度的绝对上限
     "tau_env_0": 0.5,         # 环境基础精度系数

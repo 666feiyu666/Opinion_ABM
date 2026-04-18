@@ -42,11 +42,21 @@ def initialize_model(params: dict, seed: int = 42):
         scale=params["tau_init_std"],
         size=n_agents,
     )
+    agents["e_t"] = rng_local.normal(
+        loc=params.get("e_init_mean", 0.12),
+        scale=params.get("e_init_std", 0.05),
+        size=n_agents,
+    )
 
     is_leader = agents["L"] == 1
     agents.loc[is_leader, "tau_t"] = rng_local.normal(
         loc=params["tau_L_init_mean"],
         scale=params["tau_L_init_std"],
+        size=int(is_leader.sum()),
+    )
+    agents.loc[is_leader, "e_t"] = rng_local.normal(
+        loc=params.get("e_L_init_mean", 0.90),
+        scale=params.get("e_L_init_std", 0.05),
         size=int(is_leader.sum()),
     )
 
@@ -57,6 +67,8 @@ def initialize_model(params: dict, seed: int = 42):
 
     agents["tau_t"] = np.clip(agents["tau_t"], 0.1, params["tau_max"])
     agents["tau_t1"] = agents["tau_t"].copy()
+    agents["e_t"] = np.clip(agents["e_t"], 0.0, params.get("involvement_max", 1.0))
+    agents["e_t1"] = agents["e_t"].copy()
     agents["confidence"] = agents["tau_t"].copy()
     agents["s_t"] = agents.apply(
         lambda row: sample_stance_from_opinion(

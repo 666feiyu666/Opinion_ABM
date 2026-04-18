@@ -4,10 +4,14 @@ from utils import sigmoid
 
 
 def _viewer_zone(agents, viewer: int, params: dict) -> str:
-    tolerance_threshold = params.get("tolerance_threshold", 0.0)
-    if tolerance_threshold <= 0:
+    involvement_threshold = params.get(
+        "involvement_threshold",
+        params.get("tolerance_threshold", 0.0),
+    )
+    if involvement_threshold <= 0:
         return "out"
-    return "in" if abs(float(agents.at[viewer, "o_t1"])) < tolerance_threshold else "out"
+    involvement = float(agents.at[viewer, "e_t1"]) if "e_t1" in agents.columns else 1.0
+    return "in" if involvement < involvement_threshold else "out"
 
 
 def creator_evaluation_score(viewer: int, creator: int, post: dict, agents, params: dict):

@@ -15,15 +15,25 @@ from metrics import compute_average_neighbor_opinions
 
 
 def plot_time_series_summaries(history_df):
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    axes = axes.ravel()
-
     series_spec = [
         ("actual_creators", "Number of Content Creators by Round", "Creators"),
         ("avg_exposure_size", "Average Exposure Size by Round", "Average Exposure Size"),
         ("mean_opinion", "Mean Latent Opinion by Round", "Mean Opinion"),
         ("edge_count", "Directed Edge Count by Round", "Number of Edges"),
     ]
+    if {"mean_involvement", "involved_ratio"}.issubset(history_df.columns):
+        series_spec.extend(
+            [
+                ("mean_involvement", "Mean Involvement by Round", "Mean Involvement"),
+                ("involved_ratio", "High-Involvement Ratio by Round", "Share of Agents"),
+            ]
+        )
+
+    n_plots = len(series_spec)
+    ncols = 3 if n_plots > 4 else 2
+    nrows = int(np.ceil(n_plots / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 4 * nrows))
+    axes = np.atleast_1d(axes).ravel()
 
     for ax, (column, title, ylabel) in zip(axes, series_spec):
         ax.plot(history_df["round"], history_df[column], marker="o")
@@ -31,6 +41,9 @@ def plot_time_series_summaries(history_df):
         ax.set_xlabel("Round")
         ax.set_ylabel(ylabel)
         ax.grid(alpha=0.2)
+
+    for ax in axes[n_plots:]:
+        ax.axis("off")
 
     fig.tight_layout()
     return fig, axes

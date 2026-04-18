@@ -5,8 +5,10 @@ import numpy as np
 from utils import clip_opinion, sample_stance_from_opinion
 
 
-def _zone_for_opinion(opinion: float, tolerance_threshold: float) -> str:
-    return "in" if abs(opinion) < tolerance_threshold else "out"
+def _zone_for_involvement(involvement: float, involvement_threshold: float) -> str:
+    if involvement_threshold <= 0:
+        return "out"
+    return "in" if involvement < involvement_threshold else "out"
 
 
 def _coefficient_set(params: dict, is_leader: bool, zone: str) -> tuple[float, float, float, float]:
@@ -31,14 +33,23 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
     tau_env_0 = params.get("tau_env_0", params.get("tau_env", 0.5))
     theta_conf = params.get("theta_conf", 0.5)
     eta_expression = params.get("eta_expression", 1.0)
+    involvement_max = params.get("involvement_max", 1.0)
+    involvement_decay = params.get("involvement_decay", 0.10)
+    involvement_toxic_gain = params.get("involvement_toxic_gain", 0.22)
+    involvement_exposure_gain = params.get("involvement_exposure_gain", 0.04)
 
     if "tau_t" not in agents.columns:
         if "confidence" in agents.columns:
             agents["tau_t"] = agents["confidence"].copy()
         else:
             agents["tau_t"] = 1.0
+    if "e_t" not in agents.columns:
+        agents["e_t"] = 1.0 if involvement_threshold <= 0 else 0.0
+
     agents["tau_t"] = np.clip(agents["tau_t"], 0.1, tau_max)
     agents["tau_t1"] = agents["tau_t"].copy()
+    agents["e_t"] = np.clip(agents["e_t"], 0.0, involvement_max)
+    agents["e_t1"] = agents["e_t"].copy()
 
     for i, row in agents.iterrows():
         # Aggregate exposures remain count-based, but are log-saturated before use.
@@ -47,7 +58,27 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
         exposure_nC = np.log1p(row["M_nC_t"])
         exposure_nT = np.log1p(row["M_nT_t"])
 
-        zone = _zone_for_opinion(row["o_t"], involvement_threshold)
+        N_pos = row["M_pC_t"] + row["M_pT_t"]
+        N_neg = row["M_nC_t"] + row["M_nT_t"]
+        N_total = N_pos + N_neg
+        N_toxic = row["M_pT_t"] + row["M_nT_t"]
+
+        involvement_old = float(row["e_t"])
+        toxic_share = (N_toxic / N_total) if N_total > 0 else 0.0
+        exposure_density = min(1.0, N_total / max(params.get("max_read_capacity", 1), 1))
+        activation = (
+            involvement_toxic_gain * toxic_share
+            + involvement_exposure_gain * exposure_density
+        )
+        involvement_new = (
+            involvement_old
+            + (involvement_max - involvement_old) * activation
+            - involvement_decay * involvement_old
+        )
+        involvement_new = float(np.clip(involvement_new, 0.0, involvement_max))
+        agents.at[i, "e_t1"] = involvement_new
+
+        zone = _zone_for_involvement(involvement_new, involvement_threshold)
         omega_pC, omega_pT, omega_nC, omega_nT = _coefficient_set(
             params,
             is_leader=bool(row["L"]),
@@ -61,10 +92,10 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
         delta = reinforce + attenuate + backfire
 
         damping_factor = 1.0 - 0.5 * abs(row["o_t"])
-
-        N_pos = row["M_pC_t"] + row["M_pT_t"]
-        N_neg = row["M_nC_t"] + row["M_nT_t"]
-        N_total = N_pos + N_neg
+        if involvement_threshold > 0:
+            involvement_gate = min(1.0, involvement_new / involvement_threshold)
+        else:
+            involvement_gate = 1.0
 
         # 清晰度指数衡量当前信息环境是否“一边倒”。
         # 越接近 1，说明接触到的信息越单边清晰；越接近 0，说明环境越撕裂混杂。
@@ -89,7 +120,7 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
         else:
             W_i = 0.0
 
-        opinion_new = row["o_t"] + damping_factor * W_i * delta
+        opinion_new = row["o_t"] + involvement_gate * damping_factor * W_i * delta
         opinion_new = clip_opinion(opinion_new)
 
         agents.at[i, "o_t1"] = opinion_new
@@ -103,5 +134,6 @@ def update_opinions(agents, params: dict, rng: np.random.Generator):
     # 兼容现有未改动模块：同时维护新旧置信度列。
     agents["tau_t"] = agents["tau_t1"]
     agents["confidence"] = agents["tau_t1"]
+    agents["e_t"] = agents["e_t1"]
 
     return agents
