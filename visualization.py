@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import json
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/opinion_abm_mpl")
+DEFAULT_MPL_CACHE = Path(__file__).resolve().parent / ".mpl-cache"
+DEFAULT_MPL_CACHE.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(DEFAULT_MPL_CACHE))
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -538,4 +541,510 @@ def plot_pre_post_comparison(pathology_result, healing_result, pathology_thresho
         fig.colorbar(nodes_draw, ax=ax_network, orientation="horizontal", shrink=0.72, pad=0.03)
 
     fig.tight_layout()
+    return fig, axes
+
+
+def load_leader_effects_outputs(output_dir: str | Path) -> dict[str, pd.DataFrame | dict]:
+    base_dir = Path(output_dir)
+    manifest_path = base_dir / "manifest.json"
+    manifest = {}
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    return {
+        "manifest": manifest,
+        "experiment_grid_df": pd.read_csv(base_dir / "experiment_grid.csv"),
+        "raw_df": pd.read_csv(base_dir / "raw" / "raw_results.csv"),
+        "summary_df": pd.read_csv(base_dir / "summary" / "summary_results.csv"),
+    }
+
+
+def _mode_palette() -> dict[str, str]:
+    return {
+        "balanced": "#6b7280",
+        "positive": "#dc2626",
+        "negative": "#2563eb",
+    }
+
+
+def _share_palette(labels: list[str]) -> dict[str, tuple[float, float, float, float]]:
+    palette = sns.color_palette("crest", n_colors=len(labels))
+    return {label: palette[index] for index, label in enumerate(labels)}
+
+
+def _format_share_label(series: pd.Series) -> pd.Series:
+    return series.apply(lambda value: f"{int(round(float(value) * 100))}%")
+
+
+def plot_leader_effects_mode_comparison(summary_df: pd.DataFrame):
+    n_values = sorted(summary_df["N"].unique())
+    topology_values = sorted(summary_df["topology"].unique())
+    share_order = [label for label in _format_share_label(pd.Series(sorted(summary_df["leader_share"].unique())))]
+
+    fig, axes = plt.subplots(
+        len(n_values),
+        len(topology_values),
+        figsize=(4.5 * len(topology_values), 3.6 * len(n_values)),
+        sharey=True,
+    )
+    axes = np.atleast_2d(axes)
+
+    palette = _share_palette(share_order)
+
+    for row_index, n_agents in enumerate(n_values):
+        for col_index, topology in enumerate(topology_values):
+            ax = axes[row_index, col_index]
+            subset = summary_df[(summary_df["N"] == n_agents) & (summary_df["topology"] == topology)].copy()
+            subset["leader_share_label"] = _format_share_label(subset["leader_share"])
+            sns.barplot(
+                data=subset,
+                x="leader_mode",
+                y="final_mean_opinion_mean",
+                hue="leader_share_label",
+                order=["balanced", "positive", "negative"],
+                hue_order=share_order,
+                palette=palette,
+                ax=ax,
+            )
+            ax.axhline(0.0, color="black", linewidth=1.0, linestyle="--", alpha=0.6)
+            ax.set_title(f"N={n_agents} | {topology}")
+            ax.set_xlabel("Leader mode")
+            ax.set_ylabel("Final mean opinion")
+            ax.grid(alpha=0.2, axis="y")
+            if row_index != 0 or col_index != len(topology_values) - 1:
+                legend = ax.get_legend()
+                if legend is not None:
+                    legend.remove()
+
+    handles, labels = axes[0, -1].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, title="Leader share", loc="upper center", ncol=len(labels))
+    fig.suptitle("Leader Mode Effects on Final Mean Opinion", y=1.02)
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_leader_effects_content_balance(summary_df: pd.DataFrame):
+    n_values = sorted(summary_df["N"].unique())
+    topology_values = sorted(summary_df["topology"].unique())
+    mode_order = ["balanced", "positive", "negative"]
+
+    fig, axes = plt.subplots(
+        len(n_values),
+        len(topology_values),
+        figsize=(4.5 * len(topology_values), 3.6 * len(n_values)),
+        sharey=True,
+    )
+    axes = np.atleast_2d(axes)
+
+    for row_index, n_agents in enumerate(n_values):
+        for col_index, topology in enumerate(topology_values):
+            ax = axes[row_index, col_index]
+            subset = summary_df[(summary_df["N"] == n_agents) & (summary_df["topology"] == topology)].copy()
+            subset["leader_share_label"] = _format_share_label(subset["leader_share"])
+            sns.pointplot(
+                data=subset,
+                x="leader_share_label",
+                y="content_balance_mean",
+                hue="leader_mode",
+                order=[f"{int(round(value * 100))}%" for value in sorted(summary_df["leader_share"].unique())],
+                hue_order=mode_order,
+                palette=_mode_palette(),
+                dodge=0.25,
+                markers=["o", "s", "^"],
+                linestyles="-",
+                errorbar=None,
+                ax=ax,
+            )
+            ax.axhline(0.0, color="black", linewidth=1.0, linestyle="--", alpha=0.6)
+            ax.set_title(f"N={n_agents} | {topology}")
+            ax.set_xlabel("Leader share")
+            ax.set_ylabel("Support posts - oppose posts")
+            ax.grid(alpha=0.2, axis="y")
+            if row_index != 0 or col_index != len(topology_values) - 1:
+                legend = ax.get_legend()
+                if legend is not None:
+                    legend.remove()
+
+    handles, labels = axes[0, -1].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, title="Leader mode", loc="upper center", ncol=len(labels))
+    fig.suptitle("Leader Share Effects on Net Content Supply", y=1.02)
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_leader_effects_extremism(summary_df: pd.DataFrame):
+    share_values = sorted(summary_df["leader_share"].unique())
+    n_values = sorted(summary_df["N"].unique())
+
+    fig, axes = plt.subplots(
+        len(share_values),
+        len(n_values),
+        figsize=(4.4 * len(n_values), 3.4 * len(share_values)),
+        sharey=True,
+    )
+    axes = np.atleast_2d(axes)
+
+    for row_index, share in enumerate(share_values):
+        for col_index, n_agents in enumerate(n_values):
+            ax = axes[row_index, col_index]
+            subset = summary_df[(summary_df["leader_share"] == share) & (summary_df["N"] == n_agents)].copy()
+            sns.barplot(
+                data=subset,
+                x="topology",
+                y="extremist_ratio_mean",
+                hue="leader_mode",
+                hue_order=["balanced", "positive", "negative"],
+                palette=_mode_palette(),
+                ax=ax,
+            )
+            ax.set_title(f"share={int(round(share * 100))}% | N={n_agents}")
+            ax.set_xlabel("Topology")
+            ax.set_ylabel("Extremist ratio")
+            ax.set_ylim(0.0, 1.0)
+            ax.grid(alpha=0.2, axis="y")
+            if row_index != 0 or col_index != len(n_values) - 1:
+                legend = ax.get_legend()
+                if legend is not None:
+                    legend.remove()
+
+    handles, labels = axes[0, -1].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, title="Leader mode", loc="upper center", ncol=len(labels))
+    fig.suptitle("Topology Differences in Final Extremism", y=1.02)
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_leader_effects_overview(summary_df: pd.DataFrame):
+    benchmark_share = 0.03 if 0.03 in set(np.round(summary_df["leader_share"], 4)) else sorted(summary_df["leader_share"].unique())[0]
+    subset = summary_df[np.isclose(summary_df["leader_share"], benchmark_share)].copy()
+
+    metric_specs = [
+        ("final_mean_opinion_mean", "Final mean opinion"),
+        ("content_balance_mean", "Net content supply"),
+        ("extremist_ratio_mean", "Extremist ratio"),
+        ("homophily_ratio_mean", "Homophily ratio"),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9), sharex=False)
+    axes = np.atleast_2d(axes)
+
+    for ax, (metric_column, ylabel) in zip(axes.ravel(), metric_specs):
+        sns.lineplot(
+            data=subset,
+            x="N",
+            y=metric_column,
+            hue="leader_mode",
+            hue_order=["balanced", "positive", "negative"],
+            style="topology",
+            palette=_mode_palette(),
+            markers=True,
+            dashes=False,
+            ax=ax,
+        )
+        ax.set_xlabel("Population size N")
+        ax.set_ylabel(ylabel)
+        ax.grid(alpha=0.2, axis="y")
+
+    axes[0, 0].set_title(f"Overview at leader share = {int(round(benchmark_share * 100))}%")
+    for ax in axes.ravel()[1:]:
+        ax.set_title("")
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    for ax in axes.ravel():
+        legend = ax.get_legend()
+        if legend is not None:
+            legend.remove()
+    if handles:
+        fig.legend(handles, labels, title="Leader mode", loc="upper center", ncol=len(labels))
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_leader_effects_heatmap(summary_df: pd.DataFrame, metric: str = "final_mean_opinion_mean", fixed_n: int = 1000):
+    subset = summary_df[summary_df["N"] == fixed_n].copy()
+    if subset.empty:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.text(0.5, 0.5, f"No summary rows available for N={fixed_n}", ha="center", va="center")
+        ax.axis("off")
+        return fig, np.asarray([ax])
+
+    share_values = sorted(subset["leader_share"].unique())
+    fig, axes = plt.subplots(1, len(share_values), figsize=(4.4 * len(share_values), 4.8), sharey=True)
+    axes = np.atleast_1d(axes)
+
+    for ax, share in zip(axes, share_values):
+        share_subset = subset[np.isclose(subset["leader_share"], share)].copy()
+        share_subset = (
+            share_subset.groupby(["topology", "leader_mode"], as_index=False)[metric]
+            .mean()
+        )
+        pivot_df = share_subset.pivot(index="topology", columns="leader_mode", values=metric)
+        pivot_df = pivot_df.reindex(index=sorted(pivot_df.index), columns=["balanced", "positive", "negative"])
+        sns.heatmap(
+            pivot_df,
+            annot=True,
+            fmt=".2f",
+            cmap="coolwarm",
+            center=0.0,
+            cbar=ax is axes[-1],
+            ax=ax,
+        )
+        ax.set_title(f"N={fixed_n} | share={int(round(share * 100))}%")
+        ax.set_xlabel("Leader mode")
+        ax.set_ylabel("Topology")
+
+    fig.suptitle(f"Heatmap of {metric.replace('_', ' ')}", y=1.02)
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_no_leader_control_mean_opinion(summary_df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    sns.lineplot(
+        data=summary_df,
+        x="N",
+        y="final_mean_opinion_mean",
+        hue="topology",
+        style="topology",
+        markers=True,
+        dashes=False,
+        ax=ax,
+    )
+    ax.axhline(0.0, color="black", linewidth=1.0, linestyle="--", alpha=0.6)
+    ax.set_title("No-Leader Control: Final Mean Opinion")
+    ax.set_xlabel("Population size N")
+    ax.set_ylabel("Final mean opinion")
+    ax.grid(alpha=0.2, axis="y")
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_no_leader_control_content(summary_df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    sns.lineplot(
+        data=summary_df,
+        x="N",
+        y="content_balance_mean",
+        hue="topology",
+        style="topology",
+        markers=True,
+        dashes=False,
+        ax=ax,
+    )
+    ax.axhline(0.0, color="black", linewidth=1.0, linestyle="--", alpha=0.6)
+    ax.set_title("No-Leader Control: Net Content Supply")
+    ax.set_xlabel("Population size N")
+    ax.set_ylabel("Support posts - oppose posts")
+    ax.grid(alpha=0.2, axis="y")
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_no_leader_control_extremism(summary_df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    sns.lineplot(
+        data=summary_df,
+        x="N",
+        y="extremist_ratio_mean",
+        hue="topology",
+        style="topology",
+        markers=True,
+        dashes=False,
+        ax=ax,
+    )
+    ax.set_title("No-Leader Control: Extremist Ratio")
+    ax.set_xlabel("Population size N")
+    ax.set_ylabel("Extremist ratio")
+    ax.set_ylim(0.0, 1.0)
+    ax.grid(alpha=0.2, axis="y")
+    fig.tight_layout()
+    return fig, ax
+
+
+def load_leader_effects_bundle(
+    main_output_dir: str | Path,
+    control_output_dir: str | Path,
+) -> dict[str, dict[str, pd.DataFrame | dict]]:
+    return {
+        "main": load_leader_effects_outputs(main_output_dir),
+        "control": load_leader_effects_outputs(control_output_dir),
+    }
+
+
+def summarize_leader_control_alignment(
+    main_raw_df: pd.DataFrame,
+    control_raw_df: pd.DataFrame,
+) -> dict[str, object]:
+    main_keys = (
+        main_raw_df[["N", "topology", "T_rounds"]]
+        .drop_duplicates()
+        .sort_values(["N", "topology", "T_rounds"])
+    )
+    control_keys = (
+        control_raw_df[["N", "topology", "T_rounds"]]
+        .drop_duplicates()
+        .sort_values(["N", "topology", "T_rounds"])
+    )
+
+    main_seed_count = int(main_raw_df["seed"].nunique()) if not main_raw_df.empty else 0
+    control_seed_count = int(control_raw_df["seed"].nunique()) if not control_raw_df.empty else 0
+
+    return {
+        "main_condition_count": int(len(main_raw_df)),
+        "control_condition_count": int(len(control_raw_df)),
+        "main_seed_count": main_seed_count,
+        "control_seed_count": control_seed_count,
+        "shared_population_sizes": sorted(set(main_raw_df["N"]).intersection(set(control_raw_df["N"]))),
+        "shared_topologies": sorted(set(main_raw_df["topology"]).intersection(set(control_raw_df["topology"]))),
+        "shared_rounds": sorted(set(main_raw_df["T_rounds"]).intersection(set(control_raw_df["T_rounds"]))),
+        "grid_alignment_ok": main_keys.reset_index(drop=True).equals(control_keys.reset_index(drop=True)),
+    }
+
+
+def build_leader_control_comparison_summary(
+    main_summary_df: pd.DataFrame,
+    control_summary_df: pd.DataFrame,
+    benchmark_share: float = 0.03,
+) -> pd.DataFrame:
+    benchmark_candidates = sorted(main_summary_df["leader_share"].unique())
+    if benchmark_share not in set(np.round(benchmark_candidates, 4)):
+        benchmark_share = benchmark_candidates[0]
+
+    main_subset = main_summary_df[np.isclose(main_summary_df["leader_share"], benchmark_share)].copy()
+    main_subset["comparison_group"] = main_subset["leader_mode"].map(
+        {
+            "balanced": f"balanced ({int(round(benchmark_share * 100))}%)",
+            "positive": f"positive ({int(round(benchmark_share * 100))}%)",
+            "negative": f"negative ({int(round(benchmark_share * 100))}%)",
+        }
+    )
+    main_subset["comparison_order"] = main_subset["leader_mode"].map(
+        {"balanced": 1, "positive": 2, "negative": 3}
+    )
+
+    control_subset = control_summary_df.copy()
+    control_subset["comparison_group"] = "no leader"
+    control_subset["comparison_order"] = 0
+
+    combined = pd.concat([control_subset, main_subset], ignore_index=True, sort=False)
+    combined["benchmark_share"] = float(benchmark_share)
+    return combined.sort_values(["N", "topology", "comparison_order"]).reset_index(drop=True)
+
+
+def build_leader_control_comparison_table(comparison_df: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "N",
+        "topology",
+        "comparison_group",
+        "final_mean_opinion_mean",
+        "final_mean_opinion_ci_low",
+        "final_mean_opinion_ci_high",
+        "content_balance_mean",
+        "content_balance_ci_low",
+        "content_balance_ci_high",
+        "extremist_ratio_mean",
+        "extremist_ratio_ci_low",
+        "extremist_ratio_ci_high",
+        "homophily_ratio_mean",
+    ]
+    return comparison_df[columns].copy()
+
+
+def _comparison_palette(groups: list[str]) -> dict[str, str]:
+    palette = {
+        "no leader": "#111827",
+    }
+    for group in groups:
+        if group.startswith("balanced"):
+            palette[group] = "#6b7280"
+        elif group.startswith("positive"):
+            palette[group] = "#dc2626"
+        elif group.startswith("negative"):
+            palette[group] = "#2563eb"
+    return palette
+
+
+def plot_leader_control_comparison(
+    comparison_df: pd.DataFrame,
+    metric_column: str,
+    ylabel: str,
+    title: str,
+):
+    n_values = sorted(comparison_df["N"].unique())
+    topology_values = sorted(comparison_df["topology"].unique())
+    group_order = (
+        comparison_df[["comparison_group", "comparison_order"]]
+        .drop_duplicates()
+        .sort_values("comparison_order")["comparison_group"]
+        .tolist()
+    )
+
+    fig, axes = plt.subplots(
+        len(n_values),
+        len(topology_values),
+        figsize=(4.8 * len(topology_values), 3.8 * len(n_values)),
+        sharey=True,
+    )
+    axes = np.atleast_2d(axes)
+    palette = _comparison_palette(group_order)
+
+    for row_index, n_agents in enumerate(n_values):
+        for col_index, topology in enumerate(topology_values):
+            ax = axes[row_index, col_index]
+            subset = comparison_df[
+                (comparison_df["N"] == n_agents) & (comparison_df["topology"] == topology)
+            ].copy()
+            sns.barplot(
+                data=subset,
+                x="comparison_group",
+                y=metric_column,
+                hue="comparison_group",
+                order=group_order,
+                hue_order=group_order,
+                palette=palette,
+                dodge=False,
+                legend=False,
+                ax=ax,
+            )
+            ax.set_title(f"N={n_agents} | {topology}")
+            ax.set_xlabel("")
+            ax.set_ylabel(ylabel)
+            ax.grid(alpha=0.2, axis="y")
+            ax.tick_params(axis="x", rotation=20)
+
+    fig.suptitle(title, y=1.02)
+    fig.tight_layout()
+    return fig, axes
+
+
+def plot_leader_control_mean_opinion(comparison_df: pd.DataFrame):
+    return plot_leader_control_comparison(
+        comparison_df,
+        metric_column="final_mean_opinion_mean",
+        ylabel="Final mean opinion",
+        title="No-Leader Control vs 3% Leader Benchmark",
+    )
+
+
+def plot_leader_control_content_balance(comparison_df: pd.DataFrame):
+    return plot_leader_control_comparison(
+        comparison_df,
+        metric_column="content_balance_mean",
+        ylabel="Support posts - oppose posts",
+        title="No-Leader Control vs 3% Leader Benchmark: Net Content Supply",
+    )
+
+
+def plot_leader_control_extremism(comparison_df: pd.DataFrame):
+    fig, axes = plot_leader_control_comparison(
+        comparison_df,
+        metric_column="extremist_ratio_mean",
+        ylabel="Extremist ratio",
+        title="No-Leader Control vs 3% Leader Benchmark: Extremism",
+    )
+    for ax in np.atleast_1d(axes).ravel():
+        ax.set_ylim(0.0, 1.0)
     return fig, axes

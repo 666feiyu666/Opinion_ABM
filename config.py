@@ -71,7 +71,14 @@ DEFAULT_PARAMS = {
     # Population / network
     "N": 1000,
     "m_BA": 3,
+    "network_topology": "BA",
+    "leader_share": None,
+    "leader_selection_method": "threshold",
     "leader_in_degree_threshold": 15,
+    "ws_k": 6,
+    "ws_rewire_prob": 0.10,
+    "sbm_num_blocks": 4,
+    "sbm_within_share": 0.70,
     "T_rounds": 50,
     # Initial opinion distribution
     "opinion_mean": 0.0,

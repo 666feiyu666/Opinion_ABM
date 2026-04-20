@@ -72,7 +72,10 @@ def run_simulation(
         sim_params["T_rounds"] = rounds
 
     rng = set_random_seed(seed)
-    graph, graph_undirected, agents, blocks, pos = initialize_model(sim_params, seed=seed)
+    graph, graph_undirected, agents, blocks, pos, initialization_metadata = initialize_model(
+        sim_params,
+        seed=seed,
+    )
 
     round_records = []
     all_posts_by_round = {}
@@ -106,6 +109,7 @@ def run_simulation(
     return {
         "params": sim_params,
         "seed": seed,
+        "initialization_metadata": initialization_metadata,
         "G": graph,
         "G_initial_undirected": graph_undirected,
         "G_updated": graph_updated,
