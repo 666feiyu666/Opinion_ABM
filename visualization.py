@@ -1048,3 +1048,401 @@ def plot_leader_control_extremism(comparison_df: pd.DataFrame):
     for ax in np.atleast_1d(axes).ravel():
         ax.set_ylim(0.0, 1.0)
     return fig, axes
+
+
+def _thesis_theme():
+    sns.set_theme(
+        style="whitegrid",
+        context="paper",
+        rc={
+            "axes.titlesize": 11,
+            "axes.labelsize": 10,
+            "xtick.labelsize": 9,
+            "ytick.labelsize": 9,
+            "legend.fontsize": 9,
+            "legend.title_fontsize": 9,
+        },
+    )
+
+
+def _thesis_mode_palette() -> dict[str, str]:
+    return {
+        "balanced": "#6b7280",
+        "positive": "#b91c1c",
+        "negative": "#1d4ed8",
+    }
+
+
+def _group_mean_sem(df: pd.DataFrame, value_columns: list[str], group_columns: list[str]) -> pd.DataFrame:
+    grouped = df.groupby(group_columns, as_index=False)[value_columns].agg(["mean", "std", "count"])
+    grouped.columns = [
+        "_".join([part for part in column if part]).strip("_")
+        for column in grouped.columns.to_flat_index()
+    ]
+    for column in value_columns:
+        grouped[f"{column}_sem"] = grouped[f"{column}_std"] / np.sqrt(grouped[f"{column}_count"].clip(lower=1))
+        grouped[f"{column}_ci_low"] = grouped[f"{column}_mean"] - 1.96 * grouped[f"{column}_sem"].fillna(0.0)
+        grouped[f"{column}_ci_high"] = grouped[f"{column}_mean"] + 1.96 * grouped[f"{column}_sem"].fillna(0.0)
+    return grouped
+
+
+def build_no_leader_reference_summary(control_summary_df: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "final_mean_opinion_mean",
+        "content_balance_mean",
+        "extremist_ratio_mean",
+    ]
+    return _group_mean_sem(control_summary_df, columns, ["N", "topology"])
+
+
+def build_rq2_share_summary(summary_df: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "content_balance_mean",
+        "extremist_ratio_mean",
+        "homophily_ratio_mean",
+    ]
+    grouped = _group_mean_sem(summary_df, columns, ["leader_share", "leader_mode"])
+    grouped["leader_share_pct"] = grouped["leader_share"].astype(float) * 100.0
+    return grouped.sort_values(["leader_share_pct", "leader_mode"]).reset_index(drop=True)
+
+
+def build_rq3_delta_summary(
+    summary_df: pd.DataFrame,
+    control_summary_df: pd.DataFrame,
+    benchmark_share: float = 0.03,
+) -> pd.DataFrame:
+    subset = summary_df[np.isclose(summary_df["leader_share"], benchmark_share)].copy()
+    control = control_summary_df[["N", "topology", "final_mean_opinion_mean", "extremist_ratio_mean", "homophily_ratio_mean"]].copy()
+    control = control.rename(
+        columns={
+            "final_mean_opinion_mean": "control_final_mean_opinion_mean",
+            "extremist_ratio_mean": "control_extremist_ratio_mean",
+            "homophily_ratio_mean": "control_homophily_ratio_mean",
+        }
+    )
+    merged = subset.merge(control, on=["N", "topology"], how="left")
+    merged["delta_final_mean_opinion"] = (
+        merged["final_mean_opinion_mean"] - merged["control_final_mean_opinion_mean"]
+    )
+    merged["delta_extremist_ratio"] = (
+        merged["extremist_ratio_mean"] - merged["control_extremist_ratio_mean"]
+    )
+    merged["delta_homophily_ratio"] = (
+        merged["homophily_ratio_mean"] - merged["control_homophily_ratio_mean"]
+    )
+    return merged
+
+
+def plot_thesis_no_leader_benchmark(control_summary_df: pd.DataFrame):
+    _thesis_theme()
+    grouped = build_no_leader_reference_summary(control_summary_df)
+    topology_order = sorted(grouped["topology"].unique())
+    palette = sns.color_palette("crest", n_colors=len(topology_order))
+    color_map = {topology: palette[index] for index, topology in enumerate(topology_order)}
+
+    fig, axes = plt.subplots(1, 3, figsize=(14.5, 4.2), sharex=True)
+    metric_specs = [
+        ("final_mean_opinion_mean", "Directional Drift", "Final mean opinion"),
+        ("content_balance_mean", "Net Content Supply", "Support posts - oppose posts"),
+        ("extremist_ratio_mean", "Opinion Extremity", "Extremist ratio"),
+    ]
+
+    for ax, (metric, title, ylabel) in zip(axes, metric_specs):
+        for topology in topology_order:
+            subset = grouped[grouped["topology"] == topology].sort_values("N")
+            ax.plot(
+                subset["N"],
+                subset[f"{metric}_mean"],
+                marker="o",
+                linewidth=2.0,
+                color=color_map[topology],
+                label=topology,
+            )
+            ax.fill_between(
+                subset["N"],
+                subset[f"{metric}_ci_low"],
+                subset[f"{metric}_ci_high"],
+                color=color_map[topology],
+                alpha=0.12,
+            )
+        if metric == "final_mean_opinion_mean":
+            ax.axhline(0.0, color="black", linewidth=1.0, linestyle="--", alpha=0.5)
+        if metric == "extremist_ratio_mean":
+            ax.set_ylim(0.0, 1.0)
+        ax.set_title(title)
+        ax.set_xlabel("Population size N")
+        ax.set_ylabel(ylabel)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, title="Topology", loc="upper center", ncol=len(labels))
+    fig.tight_layout(rect=[0, 0, 1, 0.9])
+    return fig, axes
+
+
+def plot_thesis_rq1_orientation(
+    summary_df: pd.DataFrame,
+    control_summary_df: pd.DataFrame,
+    benchmark_share: float = 0.03,
+):
+    _thesis_theme()
+    subset = summary_df[np.isclose(summary_df["leader_share"], benchmark_share)].copy()
+    control = control_summary_df.copy()
+    topology_order = sorted(subset["topology"].unique())
+    mode_order = ["balanced", "positive", "negative"]
+    mode_palette = _thesis_mode_palette()
+
+    fig, axes = plt.subplots(2, 2, figsize=(12.8, 8.0), sharex=True, sharey=True)
+    axes = np.atleast_2d(axes)
+
+    for ax, topology in zip(axes.ravel(), topology_order):
+        topo_control = control[control["topology"] == topology].sort_values("N")
+        ax.plot(
+            topo_control["N"],
+            topo_control["final_mean_opinion_mean"],
+            color="#111827",
+            linewidth=1.8,
+            linestyle="--",
+            marker="o",
+            label="no leader",
+        )
+
+        topo_subset = subset[subset["topology"] == topology].copy()
+        for leader_mode in mode_order:
+            mode_subset = topo_subset[topo_subset["leader_mode"] == leader_mode].sort_values("N")
+            ax.plot(
+                mode_subset["N"],
+                mode_subset["final_mean_opinion_mean"],
+                color=mode_palette[leader_mode],
+                linewidth=2.2,
+                marker="o",
+                label=leader_mode,
+            )
+        ax.axhline(0.0, color="black", linewidth=0.9, linestyle=":", alpha=0.5)
+        ax.set_title(topology)
+        ax.set_xlabel("Population size N")
+        ax.set_ylabel("Final mean opinion")
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, title="Condition", loc="upper center", ncol=4)
+    fig.tight_layout(rect=[0, 0, 1, 0.9])
+    return fig, axes
+
+
+def plot_thesis_rq2_share_gradients(summary_df: pd.DataFrame):
+    _thesis_theme()
+    grouped = build_rq2_share_summary(summary_df)
+    mode_order = ["balanced", "positive", "negative"]
+    mode_palette = _thesis_mode_palette()
+
+    fig, axes = plt.subplots(1, 3, figsize=(14.8, 4.4), sharex=True)
+    metric_specs = [
+        ("content_balance_mean", "Net Content Supply", "Support posts - oppose posts"),
+        ("extremist_ratio_mean", "Opinion Extremity", "Extremist ratio"),
+        ("homophily_ratio_mean", "Network Segregation", "Homophily ratio"),
+    ]
+
+    for ax, (metric, title, ylabel) in zip(axes, metric_specs):
+        for leader_mode in mode_order:
+            mode_subset = grouped[grouped["leader_mode"] == leader_mode].sort_values("leader_share_pct")
+            ax.plot(
+                mode_subset["leader_share_pct"],
+                mode_subset[f"{metric}_mean"],
+                color=mode_palette[leader_mode],
+                linewidth=2.2,
+                marker="o",
+                label=leader_mode,
+            )
+            ax.fill_between(
+                mode_subset["leader_share_pct"],
+                mode_subset[f"{metric}_ci_low"],
+                mode_subset[f"{metric}_ci_high"],
+                color=mode_palette[leader_mode],
+                alpha=0.12,
+            )
+        if metric != "content_balance_mean":
+            ax.set_ylim(0.0, 1.0)
+        ax.set_title(title)
+        ax.set_xlabel("Leader share (%)")
+        ax.set_ylabel(ylabel)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, title="Leader orientation", loc="upper center", ncol=3)
+    fig.tight_layout(rect=[0, 0, 1, 0.9])
+    return fig, axes
+
+
+def plot_thesis_rq3_robustness(
+    summary_df: pd.DataFrame,
+    control_summary_df: pd.DataFrame,
+    benchmark_share: float = 0.03,
+):
+    _thesis_theme()
+    deltas = build_rq3_delta_summary(
+        summary_df,
+        control_summary_df,
+        benchmark_share=benchmark_share,
+    )
+    mode_palette = _thesis_mode_palette()
+    topology_styles = {topology: style for topology, style in zip(sorted(deltas["topology"].unique()), ["-", "--", "-.", ":"])}
+
+    fig, axes = plt.subplots(1, 2, figsize=(12.8, 4.8), sharex=True)
+    metric_specs = [
+        ("delta_final_mean_opinion", "Directional Effect Relative to Control", r"$\Delta$ final mean opinion"),
+        ("delta_extremist_ratio", "Extremity Effect Relative to Control", r"$\Delta$ extremist ratio"),
+    ]
+
+    for ax, (metric, title, ylabel) in zip(axes, metric_specs):
+        for topology in sorted(deltas["topology"].unique()):
+            topo_subset = deltas[deltas["topology"] == topology].copy()
+            for leader_mode in ["balanced", "positive", "negative"]:
+                mode_subset = topo_subset[topo_subset["leader_mode"] == leader_mode].sort_values("N")
+                ax.plot(
+                    mode_subset["N"],
+                    mode_subset[metric],
+                    color=mode_palette[leader_mode],
+                    linestyle=topology_styles[topology],
+                    linewidth=1.9,
+                    marker="o",
+                )
+        ax.axhline(0.0, color="black", linewidth=0.9, linestyle=":", alpha=0.5)
+        ax.set_title(title)
+        ax.set_xlabel("Population size N")
+        ax.set_ylabel(ylabel)
+
+    mode_handles = [
+        plt.Line2D([0], [0], color=mode_palette[mode], linewidth=2.2, marker="o", label=mode)
+        for mode in ["balanced", "positive", "negative"]
+    ]
+    topo_handles = [
+        plt.Line2D([0], [0], color="#374151", linewidth=1.9, linestyle=topology_styles[topology], label=topology)
+        for topology in sorted(deltas["topology"].unique())
+    ]
+    fig.legend(mode_handles + topo_handles, [handle.get_label() for handle in mode_handles + topo_handles], title="Leader orientation / topology", loc="upper center", ncol=4)
+    fig.tight_layout(rect=[0, 0, 1, 0.88])
+    return fig, axes
+
+
+def plot_thesis_ch4_synthesis(summary_df: pd.DataFrame, benchmark_share: float = 0.03):
+    _thesis_theme()
+    subset = summary_df[np.isclose(summary_df["leader_share"], benchmark_share)].copy()
+    mode_palette = _thesis_mode_palette()
+    metric_specs = [
+        ("final_mean_opinion_mean", "Final mean opinion"),
+        ("content_balance_mean", "Support posts - oppose posts"),
+        ("extremist_ratio_mean", "Extremist ratio"),
+        ("homophily_ratio_mean", "Homophily ratio"),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(12.8, 8.4), sharex=True)
+    axes = np.atleast_2d(axes)
+
+    for ax, (metric, ylabel) in zip(axes.ravel(), metric_specs):
+        sns.lineplot(
+            data=subset,
+            x="N",
+            y=metric,
+            hue="leader_mode",
+            hue_order=["balanced", "positive", "negative"],
+            style="topology",
+            palette=mode_palette,
+            markers=True,
+            dashes=True,
+            linewidth=2.0,
+            ax=ax,
+        )
+        if metric == "final_mean_opinion_mean":
+            ax.axhline(0.0, color="black", linewidth=0.9, linestyle=":", alpha=0.5)
+        if metric in {"extremist_ratio_mean", "homophily_ratio_mean"}:
+            ax.set_ylim(0.0, 1.0)
+        ax.set_xlabel("Population size N")
+        ax.set_ylabel(ylabel)
+        legend = ax.get_legend()
+        if legend is not None:
+            legend.remove()
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, title="Leader orientation / topology", loc="upper center", ncol=4)
+    fig.tight_layout(rect=[0, 0, 1, 0.9])
+    return fig, axes
+
+
+def plot_thesis_baseline_summary(
+    history_df: pd.DataFrame,
+    agents_df: pd.DataFrame,
+    params: dict | None = None,
+):
+    _thesis_theme()
+    fig, axes = plt.subplots(1, 3, figsize=(15.2, 4.6))
+
+    ax_traj = axes[0]
+    ax_traj.plot(
+        history_df["round"],
+        history_df["mean_opinion"],
+        color="#1d4ed8",
+        linewidth=2.4,
+        marker="o",
+        markersize=3.5,
+    )
+    ax_traj.axhline(0.0, color="black", linewidth=0.9, linestyle=":", alpha=0.5)
+    ax_traj.set_title("Directional Drift")
+    ax_traj.set_xlabel("Round")
+    ax_traj.set_ylabel("Mean opinion")
+    ax_traj.set_ylim(-1.0, 0.05)
+
+    ax_pol = axes[1]
+    ax_pol.plot(
+        history_df["round"],
+        history_df["extremist_ratio"],
+        color="#b91c1c",
+        linewidth=2.2,
+        label="Extremist ratio",
+    )
+    ax_pol.plot(
+        history_df["round"],
+        history_df["homophily_ratio"],
+        color="#374151",
+        linewidth=2.0,
+        linestyle="--",
+        label="Homophily ratio",
+    )
+    ax_pol.set_title("Polarization and Segregation")
+    ax_pol.set_xlabel("Round")
+    ax_pol.set_ylabel("Ratio")
+    ax_pol.set_ylim(0.0, 1.0)
+    ax_pol.legend(frameon=True, loc="lower right")
+
+    ax_dist = axes[2]
+    counts, bin_edges, _ = ax_dist.hist(
+        agents_df["o_t"],
+        bins=24,
+        color="#93c5fd",
+        edgecolor="#1f2937",
+        alpha=0.95,
+    )
+    if params is not None:
+        initial_mean = float(params.get("opinion_mean", 0.0))
+        initial_std = float(params.get("opinion_std", 0.0))
+        if initial_std > 0:
+            x_values = np.linspace(-1.0, 1.0, 400)
+            bin_width = bin_edges[1] - bin_edges[0]
+            density = (
+                np.exp(-0.5 * ((x_values - initial_mean) / initial_std) ** 2)
+                / (initial_std * np.sqrt(2.0 * np.pi))
+            )
+            scaled_density = len(agents_df) * bin_width * density
+            ax_dist.plot(
+                x_values,
+                scaled_density,
+                color="#dc2626",
+                linewidth=2.1,
+                linestyle="--",
+                label="Initial distribution",
+            )
+            ax_dist.legend(frameon=True, loc="upper right")
+    ax_dist.set_title("Final Opinion Distribution")
+    ax_dist.set_xlabel("Latent opinion")
+    ax_dist.set_ylabel("Agents")
+    ax_dist.set_xlim(-1.05, 1.05)
+
+    fig.tight_layout()
+    return fig, axes
