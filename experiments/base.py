@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import DEFAULT_SEED, make_notebook_baseline_params, make_simple_leader_influence_params
+from config import DEFAULT_SEED, make_simple_leader_influence_params
 from main import run_simulation
 from metrics import summarize_metric_distribution
 from utils import ensure_directory, project_path
@@ -475,33 +475,14 @@ def export_leader_effects_outputs(
     }
 
 
-def build_baseline_params(
-    *,
-    baseline_variant: str = "simple_leader_influence",
-    leader_opinion_mode: str = "balanced",
-    overrides: dict | None = None,
-) -> dict:
-    variant = str(baseline_variant).strip().lower()
-    if variant == "simple_leader_influence":
-        return make_simple_leader_influence_params(
-            leader_opinion_mode=leader_opinion_mode,
-            overrides=overrides,
-        )
-    if variant == "notebook_legacy":
-        return make_notebook_baseline_params(overrides)
-    raise ValueError(f"Unsupported baseline_variant: {baseline_variant}")
-
-
 def run_baseline_experiment(
     *,
     seed: int = DEFAULT_SEED,
     output_dir: str | Path | None = None,
-    baseline_variant: str = "simple_leader_influence",
     leader_opinion_mode: str = "negative",
     overrides: dict | None = None,
 ) -> dict:
-    params = build_baseline_params(
-        baseline_variant=baseline_variant,
+    params = make_simple_leader_influence_params(
         leader_opinion_mode=leader_opinion_mode,
         overrides=overrides,
     )

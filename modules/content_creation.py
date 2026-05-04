@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+
 import numpy as np
 
 
@@ -12,41 +13,13 @@ def _warmup_scale(current_round: int, warmup_rounds: float, floor: float) -> flo
     return float(floor + (1.0 - floor) * progress)
 
 
-def _non_involved_creation_scale(
-    involvement: float,
-    involvement_threshold: float,
-    floor: float,
-    shape: float,
-) -> float:
-    if involvement_threshold <= 0:
-        return 1.0
-
-    level = float(np.clip(involvement, 0.0, 1.0))
-    if level >= involvement_threshold:
-        return 1.0
-
-    normalized_level = level / involvement_threshold
-    curved_progress = normalized_level ** max(shape, 1e-6)
-    return float(floor + (1.0 - floor) * curved_progress)
-
-
 def create_posts(agents, params: dict, rng: np.random.Generator, current_round: int = 1):
     agents = agents.copy()
     posts = {}
-    
-    # ==================== 1. 读取参数 ====================
-    # 引入温度参数
-    beta_temp = params.get("temperature_C", 1.0) # 控制 C/T 转变平滑度
-    
-    # 引入注意力/兴趣衰减参数 (新增)
+
+    beta_temp = params.get("temperature_C", 1.0)
     attention_decay = params.get("attention_decay", 0.05)
     base_create_prob = params.get("base_create_prob", 1.0)
-    involvement_threshold = params.get(
-        "involvement_threshold",
-        params.get("tolerance_threshold", 0.0),
-    )
-    non_involved_creation_floor = params.get("non_involved_creation_floor", 1.0)
-    non_involved_creation_shape = params.get("non_involved_creation_shape", 1.0)
     creation_warmup = _warmup_scale(
         current_round=current_round,
         warmup_rounds=params.get("creation_warmup_rounds", 0),
@@ -62,10 +35,7 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
         warmup_rounds=params.get("style_feedback_warmup_rounds", 0),
         floor=params.get("style_feedback_floor", 1.0),
     )
-    
-    # ==================== 2. 计算宏观衰减 ====================
-    # 前几轮只释放一部分创作活性，避免创作者数量过快冲高；
-    # 在此基础上再叠加全局注意力衰减。
+
     current_prob = (
         base_create_prob
         * creation_warmup
@@ -76,34 +46,20 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
         if row["O_t"] != 1:
             continue
 
-        # ==================== 3. 疲劳/兴趣衰减判定 ====================
-        # 低卷入主体的发帖意愿更弱，卷入被 toxic/总曝光逐轮抬升后才会更积极表达。
-        involvement_scale = _non_involved_creation_scale(
-            involvement=row.get("e_t", 1.0),
-            involvement_threshold=involvement_threshold,
-            floor=non_involved_creation_floor,
-            shape=non_involved_creation_shape,
-        )
-        effective_create_prob = current_prob * involvement_scale
-
-        # 如果随机数大于当前衰减后的概率，说明该 Agent 本轮不活跃，跳过计算
-        if rng.random() > effective_create_prob:
+        if rng.random() > current_prob:
             agents.at[i, "C_t"] = 0
             continue
 
         eps = rng.normal(0, params["epsilon_std"])
-        
-        # 使用 np.log1p 将绝对阅读量转化为对数级刺激
+
         log_pC = np.log1p(row["M_pC_prev"])
         log_pT = np.log1p(row["M_pT_prev"])
         log_nC = np.log1p(row["M_nC_prev"])
         log_nT = np.log1p(row["M_nT_prev"])
 
-        # 使用动态更新的观点 o_t 作为内部信仰锚点
         current_opinion = row["o_t"]
-        tau_t = float(row["tau_t"]) if "tau_t" in agents.columns else float(row.get("confidence", 1.0))
+        tau_t = float(row["tau_t"])
 
-        # 发帖意愿（u）同样使用平滑后的 log 值
         stance_social_plus = (
             params["beta1"] * log_pC
             + params["beta2"] * log_pT
@@ -117,14 +73,12 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
             - params["beta4"] * log_pT
         )
         u_plus = (
-            # 置信度越高，主体越坚持自身潜在意见，越不容易被外部社交压力带偏。
             params["alpha_B"] * tau_t * max(current_opinion, 0.0)
             + stance_feedback_scale * stance_social_plus
             - params["c0"]
             + eps
         )
         u_minus = (
-            # 对反向潜在意见同理：tau_t 作为“内部定力”乘数，放大内在立场动机。
             params["alpha_B"] * tau_t * max(-current_opinion, 0.0)
             + stance_feedback_scale * stance_social_minus
             - params["c0"]
@@ -135,38 +89,26 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
             agents.at[i, "C_t"] = 0
             continue
 
-        if u_plus >= 0 and u_minus >= 0:
-            if abs(u_plus - u_minus) <= params["epsilon_ambiguity"]:
-                agents.at[i, "C_t"] = 0
-                continue
+        if u_plus >= 0 and u_minus >= 0 and abs(u_plus - u_minus) <= params["epsilon_ambiguity"]:
+            agents.at[i, "C_t"] = 0
+            continue
 
         agents.at[i, "C_t"] = 1
-        
-        # ==================== 基于效用博弈与 Beta 分布的立场生成 ====================
-        # 1. 计算效用差：支持的效用 vs 反对的效用
-        # （可选）可以引入一个 beta_stance_temp 参数来控制对效用差的敏感度，默认给 1.0
-        beta_stance_temp = params.get("temperature_stance", 1.0) 
+
+        beta_stance_temp = params.get("temperature_stance", 1.0)
         diff_u = np.clip((u_plus - u_minus) / beta_stance_temp, -500, 500)
-        
-        # 2. 将效用差映射为基础概率期望 p_u
-        # 如果 u_plus 远大于 u_minus，p_u 趋近于 1；反之趋近于 0。
         p_u = 1.0 / (1.0 + np.exp(-diff_u))
-        
-        # 3. 结合置信度 tau_t 构建 Beta 分布 (保留你原本极佳的“认知浓度”设计)
-        # 此时的 p_u 已经是综合了“内心 o_t”和“外界压力”后的发声意愿期望
+
         kappa_t = params["kappa"] * tau_t
         alpha_t = 1.0 + kappa_t * p_u
         beta_t = 1.0 + kappa_t * (1.0 - p_u)
 
-        # 4. 抽样
         pi_t = alpha_t / (alpha_t + beta_t)
         stance = 1 if rng.random() < pi_t else -1
-        # ===============================================================
 
         eta_c = rng.normal(0, params["eta_C_std"])
         eta_t = rng.normal(0, params["eta_T_std"])
 
-        # 计算内容风格的效用
         if stance == 1:
             style_social_c = (
                 params["gamma1"] * log_pC
@@ -218,7 +160,6 @@ def create_posts(agents, params: dict, rng: np.random.Generator, current_round: 
                 + eta_t
             )
 
-        # 风格(Style)的概率化映射
         diff_v = np.clip((v_c - v_t) / beta_temp, -500, 500)
         prob_C = 1.0 / (1.0 + np.exp(-diff_v))
         style = "C" if rng.random() < prob_C else "T"

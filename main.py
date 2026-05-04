@@ -9,7 +9,7 @@ from modules.network_update import adapt_network
 from modules.opinion_update import update_opinions
 from modules.origination import apply_origination
 from modules.round_closure import finalize_round
-from utils import set_random_seed, tanh_mapping
+from utils import set_random_seed
 from visualization import prepare_graph_for_visualization
 
 
@@ -19,21 +19,17 @@ def prepare_agents_for_round(graph, agents, params: dict):
     agents["O_t"] = 0
     agents["C_t"] = 0
     agents["F_t"] = [graph.in_degree(i) for i in range(n_agents)]
-    agents["m_t"] = agents["o_t"].apply(lambda x: tanh_mapping(x, params["kappa"]))
     return agents
 
 
-# 增加 current_round 参数并向下传递
-def run_one_round(graph, agents, blocks: dict, params: dict, rng, current_round: int = 1):
+def run_one_round(graph, agents, params: dict, rng, current_round: int = 1):
     graph_current = graph.copy()
     agents_round = prepare_agents_for_round(graph_current, agents, params)
     agents_round = apply_origination(agents_round, params, rng)
-    # 将 current_round 传递给 create_posts
     agents_round, posts = create_posts(agents_round, params, rng, current_round)
     agents_round, exposure_sets, _ = diffuse_posts(
         graph_current,
         agents_round,
-        blocks,
         posts,
         params,
         rng,
@@ -72,7 +68,7 @@ def run_simulation(
         sim_params["T_rounds"] = rounds
 
     rng = set_random_seed(seed)
-    graph, graph_undirected, agents, blocks, pos, initialization_metadata = initialize_model(
+    graph, graph_undirected, agents, pos, initialization_metadata = initialize_model(
         sim_params,
         seed=seed,
     )
@@ -86,14 +82,12 @@ def run_simulation(
         opinion_snapshots.extend(_capture_opinion_snapshot(agents, round_number=0))
 
     for round_number in range(1, sim_params["T_rounds"] + 1):
-        # 显式传入 current_round=round_number
         graph, agents, posts, exposure_sets, summary = run_one_round(
             graph,
             agents,
-            blocks,
             sim_params,
             rng,
-            current_round=round_number
+            current_round=round_number,
         )
         summary["round"] = round_number
         round_records.append(summary)
@@ -114,7 +108,6 @@ def run_simulation(
         "G_initial_undirected": graph_undirected,
         "G_updated": graph_updated,
         "agents": agents,
-        "blocks": blocks,
         "pos": pos,
         "history_df": history_df,
         "final_state": final_state,

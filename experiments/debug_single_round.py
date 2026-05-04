@@ -17,11 +17,10 @@ from utils import set_random_seed
 def debug_single_round():
     params = make_params({"T_rounds": 1})
     rng = set_random_seed(DEFAULT_SEED)
-    graph, _, agents, blocks, _, _ = initialize_model(params, seed=DEFAULT_SEED)
+    graph, _, agents, _, _ = initialize_model(params, seed=DEFAULT_SEED)
     graph, agents, posts, exposure_sets, summary = run_one_round(
         graph,
         agents,
-        blocks,
         params,
         rng,
     )

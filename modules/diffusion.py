@@ -5,7 +5,7 @@ import numpy as np
 from utils import sigmoid
 
 
-def diffuse_posts(g_current, agents, blocks: dict, posts: dict, params: dict, rng):
+def diffuse_posts(g_current, agents, posts: dict, params: dict, rng):
     n_agents = params["N"]
     exposure_sets = {i: [] for i in range(n_agents)}
     exposure_matrix = {}
@@ -17,10 +17,6 @@ def diffuse_posts(g_current, agents, blocks: dict, posts: dict, params: dict, rn
 
         for viewer in range(n_agents):
             if viewer == creator:
-                exposure_matrix[(viewer, creator)] = 0
-                continue
-
-            if creator in blocks.get(viewer, set()):
                 exposure_matrix[(viewer, creator)] = 0
                 continue
 

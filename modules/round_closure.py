@@ -35,8 +35,6 @@ def finalize_round(g_next, agents, exposure_sets: dict, posts: dict, params: dic
 
     agents["o_t"] = agents["o_t1"]
     agents["s_t"] = agents["s_t1"]
-    if "e_t1" in agents.columns:
-        agents["e_t"] = agents["e_t1"]
     agents["A_t"] = agents["A_t1"]
     agents["F_t"] = agents["F_t1"]
 
@@ -59,13 +57,6 @@ def finalize_round(g_next, agents, exposure_sets: dict, posts: dict, params: dic
         "avg_exposure_size": float(np.mean([len(exposure_sets[i]) for i in range(n_agents)])),
         "mean_opinion": float(agents["o_t"].mean()),
         "std_opinion": float(agents["o_t"].std()),
-        "mean_involvement": float(agents["e_t"].mean()) if "e_t" in agents.columns else float("nan"),
-        "involved_ratio": float(
-            np.mean(
-                agents["e_t"].to_numpy()
-                >= params.get("involvement_threshold", params.get("tolerance_threshold", 0.0))
-            )
-        ) if "e_t" in agents.columns else float("nan"),
         "mean_abs_opinion": compute_mean_abs_opinion(agents),
         "opinion_variance": compute_opinion_variance(agents),
         "extremist_ratio": compute_extremist_ratio(agents),

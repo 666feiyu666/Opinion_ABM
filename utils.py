@@ -55,9 +55,5 @@ def sample_stance_from_opinion(
     return 1 if rng_local.random() < stance_probability else -1
 
 
-def tanh_mapping(o, kappa):
-    return float(np.tanh(kappa * o))
-
-
 def as_history_frame(round_records: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(round_records)

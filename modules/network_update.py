@@ -3,17 +3,6 @@ from __future__ import annotations
 from utils import sigmoid
 
 
-def _viewer_zone(agents, viewer: int, params: dict) -> str:
-    involvement_threshold = params.get(
-        "involvement_threshold",
-        params.get("tolerance_threshold", 0.0),
-    )
-    if involvement_threshold <= 0:
-        return "out"
-    involvement = float(agents.at[viewer, "e_t1"]) if "e_t1" in agents.columns else 1.0
-    return "in" if involvement < involvement_threshold else "out"
-
-
 def creator_evaluation_score(viewer: int, creator: int, post: dict, agents, params: dict):
     stance = post["x"]
     style = post["y"]
@@ -45,38 +34,18 @@ def creator_evaluation_score(viewer: int, creator: int, post: dict, agents, para
     return v_ij, k_ij, s_ij
 
 
-def _zone_adjusted_score(
-    viewer: int,
-    post: dict,
-    base_score: float,
-    has_edge: bool,
-    agents,
-    params: dict,
-) -> float:
-    zone = _viewer_zone(agents, viewer, params)
+def _adjusted_score(post: dict, base_score: float, has_edge: bool, agents, params: dict, viewer: int) -> float:
     viewer_direction = agents.at[viewer, "s_t1"]
     opposite = int(post["x"] != viewer_direction)
-    constructive = int(post["y"] == "C")
     toxic = int(post["y"] == "T")
 
     score = float(base_score)
-
-    if zone == "in":
-        if has_edge:
-            score += params.get("network_in_zone_contact_bonus", 0.0)
-        if opposite and constructive:
-            score += params.get("network_in_zone_opposite_constructive_bonus", 0.0)
-        elif opposite and toxic:
-            score += params.get("network_in_zone_opposite_toxic_bonus", 0.0)
-        return score
-
     if opposite:
         score -= params.get("network_out_zone_opposite_penalty", 0.0)
         if toxic:
             score -= params.get("network_out_zone_toxic_penalty", 0.0)
         if has_edge:
             score -= params.get("network_out_zone_disconnect_bias", 0.0)
-
     return score
 
 
@@ -96,26 +65,26 @@ def adapt_network(g_current, agents, exposure_sets: dict, posts: dict, params: d
             _, _, base_score = creator_evaluation_score(viewer, creator, post, agents, params)
 
             if g_current.has_edge(viewer, creator):
-                score = _zone_adjusted_score(
-                    viewer=viewer,
+                score = _adjusted_score(
                     post=post,
                     base_score=base_score,
                     has_edge=True,
                     agents=agents,
                     params=params,
+                    viewer=viewer,
                 )
                 p_maintain = sigmoid(score)
                 keep = int(rng.binomial(1, p_maintain))
                 if keep == 0 and g_next.has_edge(viewer, creator):
                     g_next.remove_edge(viewer, creator)
             else:
-                score = _zone_adjusted_score(
-                    viewer=viewer,
+                score = _adjusted_score(
                     post=post,
                     base_score=base_score,
                     has_edge=False,
                     agents=agents,
                     params=params,
+                    viewer=viewer,
                 )
                 p_follow = sigmoid(score - params["theta_F"])
                 add_follow = int(rng.binomial(1, p_follow))

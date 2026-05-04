@@ -6,7 +6,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from utils import sample_stance_from_opinion, sign_opinion, tanh_mapping
+from utils import sample_stance_from_opinion, sign_opinion
 
 
 def _normalize_topology_name(params: dict) -> str:
@@ -193,11 +193,9 @@ def initialize_model(params: dict, seed: int = 42):
         scale=params["tau_init_std"],
         size=n_agents,
     )
-    agents["e_t"] = rng_local.normal(
-        loc=params.get("e_init_mean", 0.12),
-        scale=params.get("e_init_std", 0.05),
-        size=n_agents,
-    )
+    # Preserve the historical RNG stream: the retired involvement state used
+    # one normal draw per agent before leader opinions were initialized.
+    rng_local.normal(loc=0.0, scale=1.0, size=n_agents)
 
     is_leader = agents["L"] == 1
     agents.loc[is_leader, "tau_t"] = rng_local.normal(
@@ -205,11 +203,9 @@ def initialize_model(params: dict, seed: int = 42):
         scale=params["tau_L_init_std"],
         size=int(is_leader.sum()),
     )
-    agents.loc[is_leader, "e_t"] = rng_local.normal(
-        loc=params.get("e_L_init_mean", 0.90),
-        scale=params.get("e_L_init_std", 0.05),
-        size=int(is_leader.sum()),
-    )
+    # Preserve the matching leader-only draw count from the retired
+    # involvement initialization path so seeded paper runs stay reproducible.
+    rng_local.normal(loc=0.0, scale=1.0, size=int(is_leader.sum()))
 
     leader_count = int(is_leader.sum())
     leader_signs = _leader_signs(
@@ -222,9 +218,6 @@ def initialize_model(params: dict, seed: int = 42):
 
     agents["tau_t"] = np.clip(agents["tau_t"], 0.1, params["tau_max"])
     agents["tau_t1"] = agents["tau_t"].copy()
-    agents["e_t"] = np.clip(agents["e_t"], 0.0, params.get("involvement_max", 1.0))
-    agents["e_t1"] = agents["e_t"].copy()
-    agents["confidence"] = agents["tau_t"].copy()
     agents["s_t"] = agents.apply(
         lambda row: sample_stance_from_opinion(
             opinion=row["o_t"],
@@ -242,7 +235,6 @@ def initialize_model(params: dict, seed: int = 42):
         size=n_agents,
     )
     agents["A_t"] = agents["Abar"].copy()
-    agents["m_t"] = agents["o_t"].apply(lambda x: tanh_mapping(x, params["kappa"]))
 
     agents["O_t"] = 0
     agents["C_t"] = 0
@@ -252,7 +244,6 @@ def initialize_model(params: dict, seed: int = 42):
     agents["M_nC_prev"] = 0.0
     agents["M_nT_prev"] = 0.0
 
-    blocks = {i: set() for i in range(n_agents)}
     pos = nx.spring_layout(graph_undirected, seed=seed, k=min(0.25, 5.0 / math.sqrt(max(n_agents, 1))), iterations=100)
 
     for node in graph_directed.nodes():
@@ -266,4 +257,4 @@ def initialize_model(params: dict, seed: int = 42):
         "leader_selection_method": str(params.get("leader_selection_method", "threshold")),
     }
 
-    return graph_directed, graph_undirected, agents, blocks, pos, initialization_metadata
+    return graph_directed, graph_undirected, agents, pos, initialization_metadata
