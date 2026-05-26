@@ -5,10 +5,17 @@ import numpy as np
 from utils import sigmoid
 
 
-def diffuse_posts(g_current, agents, posts: dict, params: dict, rng):
+def diffuse_posts(
+    g_current,
+    agents,
+    posts: dict,
+    params: dict,
+    rng,
+    collect_exposure_matrix: bool = True,
+):
     n_agents = params["N"]
     exposure_sets = {i: [] for i in range(n_agents)}
-    exposure_matrix = {}
+    exposure_matrix = {} if collect_exposure_matrix else None
 
     for creator, post in posts.items():
         creator_is_leader = post["q"]
@@ -17,11 +24,13 @@ def diffuse_posts(g_current, agents, posts: dict, params: dict, rng):
 
         for viewer in range(n_agents):
             if viewer == creator:
-                exposure_matrix[(viewer, creator)] = 0
+                if collect_exposure_matrix:
+                    exposure_matrix[(viewer, creator)] = 0
                 continue
 
             if g_current.has_edge(viewer, creator):
-                exposure_matrix[(viewer, creator)] = 1
+                if collect_exposure_matrix:
+                    exposure_matrix[(viewer, creator)] = 1
                 exposure_sets[viewer].append(post)
                 continue
 
@@ -36,7 +45,8 @@ def diffuse_posts(g_current, agents, posts: dict, params: dict, rng):
                 p_exposure = sigmoid(z_value)
 
             exposed = int(rng.binomial(1, p_exposure))
-            exposure_matrix[(viewer, creator)] = exposed
+            if collect_exposure_matrix:
+                exposure_matrix[(viewer, creator)] = exposed
             if exposed == 1:
                 exposure_sets[viewer].append(post)
 
@@ -55,7 +65,8 @@ def diffuse_posts(g_current, agents, posts: dict, params: dict, rng):
             
             dropped_posts = exposure_sets[viewer][params["max_read_capacity"]:]
             for post in dropped_posts:
-                exposure_matrix[(viewer, post["creator"])] = 0
+                if collect_exposure_matrix:
+                    exposure_matrix[(viewer, post["creator"])] = 0
                 
             exposure_sets[viewer] = exposure_sets[viewer][:params["max_read_capacity"]]
             

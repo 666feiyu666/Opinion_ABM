@@ -169,7 +169,7 @@ def _leader_signs(rng_local: np.random.Generator, count: int, mode: str) -> np.n
     return rng_local.choice([-1.0, 1.0], size=count)
 
 
-def initialize_model(params: dict, seed: int = 42):
+def initialize_model(params: dict, seed: int = 42, compute_layout: bool = True):
     rng_local = np.random.default_rng(seed)
     np.random.seed(seed)
 
@@ -244,7 +244,14 @@ def initialize_model(params: dict, seed: int = 42):
     agents["M_nC_prev"] = 0.0
     agents["M_nT_prev"] = 0.0
 
-    pos = nx.spring_layout(graph_undirected, seed=seed, k=min(0.25, 5.0 / math.sqrt(max(n_agents, 1))), iterations=100)
+    pos = None
+    if compute_layout:
+        pos = nx.spring_layout(
+            graph_undirected,
+            seed=seed,
+            k=min(0.25, 5.0 / math.sqrt(max(n_agents, 1))),
+            iterations=100,
+        )
 
     for node in graph_directed.nodes():
         graph_directed.nodes[node]["opinion"] = agents.at[node, "o_t"]

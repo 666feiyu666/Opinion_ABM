@@ -33,6 +33,7 @@ def run_one_round(graph, agents, params: dict, rng, current_round: int = 1):
         posts,
         params,
         rng,
+        collect_exposure_matrix=False,
     )
     agents_round = update_opinions(agents_round, params, rng)
     graph_next = adapt_network(graph_current, agents_round, exposure_sets, posts, params, rng)
@@ -62,6 +63,8 @@ def run_simulation(
     seed: int = DEFAULT_SEED,
     rounds: int | None = None,
     track_opinions: bool = False,
+    compute_layout: bool = True,
+    retain_round_details: bool = True,
 ):
     sim_params = make_params(params)
     if rounds is not None:
@@ -71,6 +74,7 @@ def run_simulation(
     graph, graph_undirected, agents, pos, initialization_metadata = initialize_model(
         sim_params,
         seed=seed,
+        compute_layout=compute_layout,
     )
 
     round_records = []
@@ -91,8 +95,9 @@ def run_simulation(
         )
         summary["round"] = round_number
         round_records.append(summary)
-        all_posts_by_round[round_number] = posts
-        all_exposure_sets_by_round[round_number] = exposure_sets
+        if retain_round_details:
+            all_posts_by_round[round_number] = posts
+            all_exposure_sets_by_round[round_number] = exposure_sets
         if track_opinions:
             opinion_snapshots.extend(_capture_opinion_snapshot(agents, round_number=round_number))
 
