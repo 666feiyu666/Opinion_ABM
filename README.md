@@ -64,25 +64,26 @@ Opinion leaders are not a separate agent type. They are ordinary users with stru
 Run the default simulation:
 
 ```bash
-python main.py
+uv sync --locked
+uv run python main.py
 ```
 
 Run the baseline experiment:
 
 ```bash
-python experiments/run_baseline.py
+uv run python experiments/run_baseline.py
 ```
 
 Run the leader-effects experiment matrix:
 
 ```bash
-python experiments/run_leader_effects.py --profile main --scenario core
+uv run python experiments/run_leader_effects.py --profile main --scenario core
 ```
 
 For a smaller smoke test:
 
 ```bash
-python experiments/run_leader_effects.py --profile trial --scenario core --max-runs 4
+uv run python experiments/run_leader_effects.py --profile trial --scenario core --max-runs 4
 ```
 
 ## Notes
