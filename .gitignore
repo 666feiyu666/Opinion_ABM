@@ -3,6 +3,12 @@
 __pycache__/
 *.py[cod]
 .mpl-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
 .DS_Store
 outputs/
 Senior_Thesis/
