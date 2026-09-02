@@ -11,7 +11,4 @@ htmlcov/
 *.egg-info/
 .DS_Store
 outputs/
-Senior_Thesis/
-ODD_Protocol/
-oral_defense/
-oral_defense.zip
+AGENTS.md 
