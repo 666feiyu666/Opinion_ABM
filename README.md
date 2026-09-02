@@ -11,9 +11,9 @@ to explicit cases.
 
 - `opleader`: opinion-leader case.
 - `platform`: platform-distribution case.
-- `legacy`: frozen OLIM implementation and historical results.
+- `legacy`: preserves the implementation and experiment artifacts developed for Feiyu Tang's 2026 undergraduate senior thesis at the ZJU-UIUC Institute, supervised by Prof. Pavel Loskot
 
-The scientific specification will be provided as an ODD document rather than maintained under `docs/`.
+The scientific specification will be later provided as an ODD document.
 
 ## Quick check
 
