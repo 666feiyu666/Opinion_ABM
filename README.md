@@ -15,6 +15,30 @@ to explicit cases.
 
 The scientific specification will be later provided as an ODD document.
 
+## Current Goal
+Establish a minimal shared baseline
+The baseline should contain:
+- a precisely defined latent attitude;
+- a precisely defined observable message;
+- a neutral source/message selection process;
+- one justified attitude-update mechanism;
+- an explicit multi-message aggregation rule;
+- a fixed activation and update schedule;
+- no opinion-leader advantage;
+- no algorithmic platform preference.
+This baseline becomes the control model used by both scenario families.
+
+## Tips on Buliding
+For every function, record:
+- inputs and outputs;
+- substantive meaning;
+- boundary behavior;
+- randomness;
+- qualitative expectations;
+- empirical or theoretical basis;
+- plausible alternative formulation.
+For example, before choosing an update equation, decide what should happen under no exposure, unanimous exposure, balanced conflicting exposure, moderate disagreement, and extreme disagreement.
+
 ## Quick check
 
 ```powershell
