@@ -1,21 +1,9 @@
 # Opinion Model
 
-A shared agent-based framework for studying how agent state shapes information
-and how consumed information changes agent state.
+## Null Branch
+`null` contains the general contracts and null baseline. Platform behavior, opinion leadership, action, delivery, consumption, and network adaptation belong to explicit cases.
 
-## Scope
-
-`main` contains the general contracts and null baseline. Platform behavior,
-opinion leadership, action, delivery, consumption, and network adaptation belong
-to explicit cases.
-
-- `opleader`: opinion-leader case.
-- `platform`: platform-distribution case.
-- `legacy`: preserves the implementation and experiment artifacts developed for Feiyu Tang's 2026 undergraduate senior thesis at the ZJU-UIUC Institute, supervised by Prof. Pavel Loskot
-
-The scientific specification will be later provided as an ODD document.
-
-## Current Goal
+## Goal of Null Branch
 Establish a minimal shared baseline
 The baseline should contain:
 - a precisely defined latent attitude;
@@ -27,17 +15,6 @@ The baseline should contain:
 - no opinion-leader advantage;
 - no algorithmic platform preference.
 This baseline becomes the control model used by both scenario families.
-
-## Tips on Buliding
-For every function, record:
-- inputs and outputs;
-- substantive meaning;
-- boundary behavior;
-- randomness;
-- qualitative expectations;
-- empirical or theoretical basis;
-- plausible alternative formulation.
-For example, before choosing an update equation, decide what should happen under no exposure, unanimous exposure, balanced conflicting exposure, moderate disagreement, and extreme disagreement.
 
 ## Quick check
 
