@@ -18,7 +18,12 @@ from opinion_model.core import (
     MessageAggregation,
     MessageEvidence,
 )
-from opinion_model.opleader import OriginatorKind, SourceWeightedAggregation
+from opinion_model.opleader import (
+    OriginatorKind,
+    RecipientKind,
+    SourceRecipientWeightedAggregation,
+    SourceWeightedAggregation,
+)
 
 
 class SourceWeightedAggregationTests(unittest.TestCase):
@@ -152,6 +157,171 @@ class SourceWeightedAggregationTests(unittest.TestCase):
             SourceWeightedAggregation(
                 originator_kind_by_id={self.PRESS_ID: OriginatorKind.PRESS},
                 source_weight_by_kind={OriginatorKind.PRESS: 1.0},
+            )
+
+
+class SourceRecipientWeightedAggregationTests(unittest.TestCase):
+    PRESS_ID = 10
+    LEADER_SOURCE_ID = 1
+    LEADER_RECIPIENT_ID = 0
+    ORDINARY_RECIPIENT_ID = 2
+
+    def setUp(self) -> None:
+        self.aggregator = SourceRecipientWeightedAggregation(
+            originator_kind_by_id={
+                self.PRESS_ID: OriginatorKind.PRESS,
+                self.LEADER_SOURCE_ID: OriginatorKind.LEADER,
+            },
+            recipient_kind_by_id={
+                self.LEADER_RECIPIENT_ID: RecipientKind.LEADER,
+                self.ORDINARY_RECIPIENT_ID: RecipientKind.ORDINARY,
+            },
+            relation_weight_by_kinds={
+                (OriginatorKind.PRESS, RecipientKind.LEADER): 2.0,
+                (OriginatorKind.PRESS, RecipientKind.ORDINARY): 0.5,
+                (OriginatorKind.LEADER, RecipientKind.LEADER): 0.25,
+                (OriginatorKind.LEADER, RecipientKind.ORDINARY): 3.0,
+            },
+        )
+
+    @staticmethod
+    def exposure(
+        producer_id: int,
+        consumer_id: int,
+        stance: int,
+        label: str,
+    ) -> Exposure:
+        return Exposure(
+            round_index=1,
+            consumer_id=consumer_id,
+            message=Message(
+                message_id=f"r1:{label}",
+                round_index=1,
+                producer_id=producer_id,
+                stance=stance,
+            ),
+        )
+
+    def test_implements_existing_message_aggregation_protocol(self) -> None:
+        self.assertIsInstance(self.aggregator, MessageAggregation)
+
+    def test_empty_exposure_produces_zero_evidence(self) -> None:
+        evidence = self.aggregator((), AggregationContext(0.5))
+        self.assertEqual(evidence, MessageEvidence(0, 0, 0.0, 0.0))
+
+    def test_all_four_source_recipient_relations_are_distinct(self) -> None:
+        context = AggregationContext(1.0)
+        cases = {
+            (self.PRESS_ID, self.LEADER_RECIPIENT_ID): 2.0,
+            (self.PRESS_ID, self.ORDINARY_RECIPIENT_ID): 0.5,
+            (self.LEADER_SOURCE_ID, self.LEADER_RECIPIENT_ID): 0.25,
+            (self.LEADER_SOURCE_ID, self.ORDINARY_RECIPIENT_ID): 3.0,
+        }
+
+        for (producer_id, consumer_id), expected_weight in cases.items():
+            with self.subTest(producer_id=producer_id, consumer_id=consumer_id):
+                evidence = self.aggregator(
+                    (
+                        self.exposure(
+                            producer_id,
+                            consumer_id,
+                            1,
+                            f"{producer_id}-{consumer_id}",
+                        ),
+                    ),
+                    context,
+                )
+                self.assertEqual(evidence.n_support, 1)
+                self.assertAlmostEqual(evidence.weighted_support, expected_weight)
+
+    def test_equal_recipient_columns_reproduce_source_only_null(self) -> None:
+        source_only = SourceWeightedAggregation(
+            originator_kind_by_id={
+                self.PRESS_ID: OriginatorKind.PRESS,
+                self.LEADER_SOURCE_ID: OriginatorKind.LEADER,
+            },
+            source_weight_by_kind={
+                OriginatorKind.PRESS: 1.0,
+                OriginatorKind.LEADER: 3.0,
+            },
+        )
+        relation_aware = SourceRecipientWeightedAggregation(
+            originator_kind_by_id={
+                self.PRESS_ID: OriginatorKind.PRESS,
+                self.LEADER_SOURCE_ID: OriginatorKind.LEADER,
+            },
+            recipient_kind_by_id={
+                self.LEADER_RECIPIENT_ID: RecipientKind.LEADER,
+                self.ORDINARY_RECIPIENT_ID: RecipientKind.ORDINARY,
+            },
+            relation_weight_by_kinds={
+                (OriginatorKind.PRESS, RecipientKind.LEADER): 1.0,
+                (OriginatorKind.PRESS, RecipientKind.ORDINARY): 1.0,
+                (OriginatorKind.LEADER, RecipientKind.LEADER): 3.0,
+                (OriginatorKind.LEADER, RecipientKind.ORDINARY): 3.0,
+            },
+        )
+        context = AggregationContext(0.5)
+
+        for consumer_id in (self.LEADER_RECIPIENT_ID, self.ORDINARY_RECIPIENT_ID):
+            exposures = (
+                self.exposure(self.PRESS_ID, consumer_id, 1, "press"),
+                self.exposure(
+                    self.LEADER_SOURCE_ID,
+                    consumer_id,
+                    -1,
+                    "leader",
+                ),
+            )
+            with self.subTest(consumer_id=consumer_id):
+                self.assertEqual(
+                    relation_aware(exposures, context),
+                    source_only(exposures, context),
+                )
+
+    def test_exposures_for_multiple_recipients_are_rejected(self) -> None:
+        exposures = (
+            self.exposure(self.PRESS_ID, self.LEADER_RECIPIENT_ID, 1, "leader"),
+            self.exposure(self.PRESS_ID, self.ORDINARY_RECIPIENT_ID, 1, "ordinary"),
+        )
+        with self.assertRaisesRegex(ValueError, "multiple recipients"):
+            self.aggregator(exposures, AggregationContext(1.0))
+
+    def test_unknown_recipient_is_rejected(self) -> None:
+        exposures = (self.exposure(self.PRESS_ID, 99, 1, "unknown"),)
+        with self.assertRaisesRegex(
+            ValueError,
+            "No recipient kind registered for consumer 99",
+        ):
+            self.aggregator(exposures, AggregationContext(1.0))
+
+    def test_invalid_relation_weight_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "finite and non-negative"):
+            SourceRecipientWeightedAggregation(
+                originator_kind_by_id={self.PRESS_ID: OriginatorKind.PRESS},
+                recipient_kind_by_id={
+                    self.LEADER_RECIPIENT_ID: RecipientKind.LEADER,
+                },
+                relation_weight_by_kinds={
+                    (OriginatorKind.PRESS, RecipientKind.LEADER): 1.0,
+                    (OriginatorKind.PRESS, RecipientKind.ORDINARY): 1.0,
+                    (OriginatorKind.LEADER, RecipientKind.LEADER): 1.0,
+                    (OriginatorKind.LEADER, RecipientKind.ORDINARY): float("inf"),
+                },
+            )
+
+    def test_missing_relation_weight_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "leader->ordinary"):
+            SourceRecipientWeightedAggregation(
+                originator_kind_by_id={self.PRESS_ID: OriginatorKind.PRESS},
+                recipient_kind_by_id={
+                    self.LEADER_RECIPIENT_ID: RecipientKind.LEADER,
+                },
+                relation_weight_by_kinds={
+                    (OriginatorKind.PRESS, RecipientKind.LEADER): 1.0,
+                    (OriginatorKind.PRESS, RecipientKind.ORDINARY): 1.0,
+                    (OriginatorKind.LEADER, RecipientKind.LEADER): 1.0,
+                },
             )
 
 
