@@ -4,11 +4,11 @@
 >
 > **Case:** `opleader`
 >
-> **Scope:** Two-step-flow-inspired opinion leadership after external information has entered the social system, without a modeled press or online platform
+> **Scope:** Two-step-flow-inspired opinion leadership after external information has entered the social system, using a fixed interpersonal network and no modeled press or online platform
 
 ## Purpose and model boundary
 
-This model examines how opinion leaders shape information diffusion, opinion updating, and network adaptation after a topic has entered a social system. It is inspired by Katz's two-step-flow research, but it does not model the press as an entity or reproduce the complete press-to-leader-to-public sequence.
+This model examines how opinion leaders shape information diffusion and opinion updating after a topic has entered a social system. It is inspired by Katz's two-step-flow research, but it does not model the press as an entity or reproduce the complete press-to-leader-to-public sequence.
 
 The boundary assumption is that external information providers have already done their work before the simulation begins. Their prior influence is represented only through the agents' initialized beliefs and other initial conditions. The simulated process begins when social agents may originate messages within their network.
 
@@ -22,7 +22,7 @@ For one focal topic, opinion leadership is represented through the following pro
 |---|---|
 | Greater involvement in the topic | Leaders have a higher probability of originating a message. |
 | Greater contact with external information | If retained, leaders may begin with different belief or information initial conditions; the external source itself remains outside the model. |
-| Strategic social location | Leaders may occupy more connected positions or acquire greater reach through the adaptive network. |
+| Strategic social location | Leaders may occupy more connected positions in the fixed interpersonal network. |
 | Competence or recognized authority | Messages from leaders may receive greater evidence weight. |
 | Domain-specific leadership | Leader status applies only to the focal topic. |
 
@@ -30,11 +30,11 @@ These representations adapt selected ideas from two-step-flow theory to the curr
 
 ## Entities, states, and communication roles
 
-- **Adaptive social agents:** all agents hold a private Beta belief, may originate a message, may receive messages, update their beliefs, and participate in network adaptation.
-- **Opinion leaders:** adaptive social agents whose leader status can modify particular mechanisms, including origination probability, structural reach, message weight, and network evaluation.
+- **Adaptive social agents:** all agents hold a private Beta belief, may originate a message, may receive messages, and update their beliefs.
+- **Opinion leaders:** adaptive social agents whose leader status can modify particular mechanisms, including origination probability, initialized structural reach, and message weight.
 - **Ordinary agents:** adaptive social agents governed by the same basic process but without the corresponding leader advantages.
 - **Messages:** observable expressions produced by agents. Each message retains its producer identity and stance so that exposure and influence can depend on source role.
-- **Communication network:** a directed and potentially adaptive relation indicating which producers are available to each consumer.
+- **Social network:** fixed reciprocal ties representing regular interpersonal relationships through which agents can communicate about the focal topic.
 
 `leader` and `ordinary` are agent roles. `originator` and `consumer` describe communication roles within a round:
 
@@ -53,7 +53,9 @@ Keeping the origination draw separate from conditional stance formation prevents
 
 ## Diffusion, exposure, and influence
 
-Produced messages diffuse through the directed social network. All produced messages, whether from leaders or ordinary agents, are eligible for network-based transmission. Opinion leaders can have greater reach through their structural position or through an explicit leader-conditioned delivery rule, but the chosen representation remains open.
+Produced messages diffuse through the fixed social network. Every message originated in the current round is delivered deterministically to all of the originator's regular social contacts. Messages from both leaders and ordinary agents obey the same tie-bound rule; no message is delivered to an untied agent. Selection is stance-blind and role-blind.
+
+Opinion leaders can have greater expected reach through a more connected initialized network position and through their higher probability of originating messages. Selection adds no separate leader-conditioned delivery advantage. Attention competition is omitted, so configured capacity must be large enough to retain all messages eligible through social ties. For the bounded mechanism definition, see [Message Selection](message-selection.md).
 
 This case does not include algorithmic ranking, recommendation, or out-of-network platform amplification. Those are platform mechanisms rather than opinion-leader mechanisms.
 
@@ -64,30 +66,27 @@ Unequal influence has two separable components:
 
 Messages retain producer identity so that leader and ordinary messages can receive different weights. The substantive interpretation of a larger leader weight—such as credibility, persuasion, or evidential strength—remains open.
 
-## Opinion updating and network adaptation
+## Opinion updating
 
 Each recipient aggregates the messages received during the round and updates its private Beta belief once. Raw exposure counts and weighted evidence remain distinguishable so that message availability is not conflated with influence.
-
-After exposure and belief updating, agents may revise their directed network relations using information from the messages and producers encountered during the round. Leader status may affect creator evaluation or tie formation, but the exact network-adaptation rule and whether it evaluates pre-update or proposed post-update beliefs remain open.
 
 ## Round schedule
 
 Each round follows one synchronous sequence:
 
-1. Read agent beliefs and the network from the state at the start of round `t`.
+1. Read agent beliefs and the fixed social network from the state at the start of round `t`.
 2. Draw whether each agent originates a message, with a higher origination probability for opinion leaders. Each successful draw produces one message whose stance is sampled from the agent's start-of-round Beta belief.
-3. Diffuse originated messages through the current directed network and determine each agent's exposures.
+3. Deliver each originated message to all of the originator's regular social contacts and determine each agent's exposures.
 4. Aggregate received messages, including any source-dependent evidence weights.
 5. Propose one updated Beta belief for each agent.
-6. Propose network changes from the round's encounters under the specified network-adaptation rule.
-7. Commit the proposed beliefs and network as the state for round `t+1`.
+6. Commit the proposed beliefs as the state for round `t+1` while retaining the same social network.
 
-An updated belief or network position can affect message origination only from the next round onward.
+An updated belief can affect message origination only from the next round onward.
 
 ## Current boundaries and open decisions
 
-The current case includes ordinary-agent and leader message origination, network-based diffusion, opinion updating, and network adaptation. It excludes a separate message-production decision, a press entity, externally scheduled press messages, algorithmic ranking, out-of-network recommendation, and engagement-driven platform feedback.
+The current case includes ordinary-agent and leader message origination, deterministic tie-bound diffusion through a fixed social network, and opinion updating. It excludes a separate message-production decision, a press entity, externally scheduled press messages, stochastic or out-of-tie delivery, attention competition, message forwarding, network adaptation, algorithmic ranking, out-of-network recommendation, and engagement-driven platform feedback.
 
-The current basic decisions are the decaying logistic origination probability, the leader log-odds advantage, and the Beta-tail stance mapping documented in [Posting Origination](posting-origination.md). Open decisions include parameter justification or calibration, the representation of leader reach, the meaning and magnitude of leader evidence weight, the network-adaptation rule, and whether leader access to prior external information requires a distinct initialization mechanism.
+The current basic decisions are the decaying logistic origination probability, the leader log-odds advantage, the Beta-tail stance mapping documented in [Posting Origination](posting-origination.md), and the deterministic tied-delivery rule documented in [Message Selection](message-selection.md). Open decisions include parameter justification or calibration, initialization of the fixed network and leader positions, the meaning and magnitude of leader evidence weight, and whether leader access to prior external information requires a distinct initialization mechanism.
 
-Leader initialization, origination advantage, reach, evidence weight, and network attractiveness should remain separable so that their individual and combined effects can later be examined.
+Leader initialization, origination advantage, structural reach, and evidence weight should remain separable so that their individual and combined effects can later be examined.

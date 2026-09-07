@@ -10,14 +10,14 @@ from opinion_model.opleader.message_origination import (
     OpinionLeaderMessageOrigination,
     origination_probability,
 )
-from opinion_model.opleader.message_selection import OpinionLeaderMessageSelection
+from opinion_model.opleader.message_selection import select_messages
 
 __all__ = [
     "OpinionLeaderMessageOrigination",
     "OriginatorKind",
-    "OpinionLeaderMessageSelection",
     "RecipientKind",
     "SourceRecipientWeightedAggregation",
     "SourceWeightedAggregation",
     "origination_probability",
+    "select_messages",
 ]
