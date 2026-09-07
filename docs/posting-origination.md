@@ -6,7 +6,7 @@
 
 ## Purpose and boundary
 
-Before the simulation begins, information about the focal issue has already circulated and agents hold heterogeneous, non-consensual Beta beliefs. External information providers are outside the model. Posting origination describes how agents introduce new expressions of those beliefs into the simulated interaction process.
+Before the simulation begins, information about the focal issue has already circulated and agents hold heterogeneous, non-consensual Beta beliefs. These initial beliefs represent the state from which interpersonal communication begins. Posting origination describes how agents introduce new expressions of those beliefs into the simulated interaction process.
 
 ## Working definition
 

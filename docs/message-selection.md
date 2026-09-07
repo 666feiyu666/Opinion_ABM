@@ -6,7 +6,7 @@
 
 ## Purpose and boundary
 
-Message selection determines which messages originated in the current round become exposures for each agent. The mechanism operates within a fixed social network containing opinion-leader and ordinary-agent nodes. It does not represent a follower system, a press source, an online platform, or an adaptive network.
+Message selection determines which messages originated in the current round become exposures for each agent. The mechanism operates within a fixed social network containing opinion-leader and ordinary-agent nodes. The ties represent reciprocal regular interpersonal relationships rather than a follower system, and the network does not adapt during the simulation.
 
 The current rule is deliberately narrow: messages travel only through regular interpersonal relationships, and delivery through those relationships is deterministic. Opinion-leader status does not create a separate delivery privilege inside the selection function.
 
@@ -53,7 +53,7 @@ m_j^t\in\mathcal{C}_i^t
 \right\}.
 $$
 
-Selection does not inspect the producer's role or the message stance. Conditional on originating a message, an opinion leader and an ordinary agent with the same social contacts have the same delivery pattern. Each exposure retains the message identity, originator identity, round, and stance for later aggregation and source-dependent weighting.
+Selection does not inspect the producer's role or the message stance. Conditional on originating a message, an opinion leader and an ordinary agent with the same social contacts have the same delivery pattern. Each exposure retains the message identity, originator identity, round, and stance for the source-dependent rule defined in [Message Aggregation](message-aggregation.md).
 
 ## Attention and capacity
 
@@ -73,7 +73,7 @@ The current model keeps three possible sources of leader advantage separate:
 
 1. opinion leaders have a higher probability of originating a message;
 2. opinion leaders may have greater structural reach through their initialized network position;
-3. opinion-leader messages may later receive different evidence weight during aggregation.
+3. opinion-leader messages receive a relative evidence multiplier during aggregation, as defined in [Message Aggregation](message-aggregation.md).
 
 Message selection itself adds no fourth advantage. In particular, it does not preferentially deliver leader messages and does not send them to untied agents.
 

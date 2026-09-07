@@ -4,13 +4,13 @@
 >
 > **Case:** `opleader`
 >
-> **Scope:** Two-step-flow-inspired opinion leadership after external information has entered the social system, using a fixed interpersonal network and no modeled press or online platform
+> **Scope:** Two-step-flow-inspired opinion leadership after information about a focal issue has entered the social system, using a fixed interpersonal network
 
 ## Purpose and model boundary
 
-This model examines how opinion leaders shape information diffusion and opinion updating after a topic has entered a social system. It is inspired by Katz's two-step-flow research, but it does not model the press as an entity or reproduce the complete press-to-leader-to-public sequence.
+This model examines how opinion leaders shape information diffusion and opinion updating after a topic has entered a social system. It adapts selected ideas from Katz's two-step-flow research to the interpersonal communication process that follows.
 
-The boundary assumption is that external information providers have already done their work before the simulation begins. Their prior influence is represented only through the agents' initialized beliefs and other initial conditions. The simulated process begins when social agents may originate messages within their network.
+The boundary assumption is that information about the focal issue has already circulated before the simulation begins. Its prior influence is represented through the agents' initialized beliefs and other initial conditions. The simulated process begins when social agents may originate messages within their network.
 
 Within this boundary, an **originator** is not necessarily the original creator of the underlying information. It is an agent selected to produce a message that can initiate a diffusion episode in the modeled network.
 
@@ -21,12 +21,12 @@ For one focal topic, opinion leadership is represented through the following pro
 | Katz-related property | Candidate representation |
 |---|---|
 | Greater involvement in the topic | Leaders have a higher probability of originating a message. |
-| Greater contact with external information | If retained, leaders may begin with different belief or information initial conditions; the external source itself remains outside the model. |
+| Greater contact with prior information | If retained, leaders may begin with different belief or information initial conditions. |
 | Strategic social location | Leaders may occupy more connected positions in the fixed interpersonal network. |
 | Competence or recognized authority | Messages from leaders may receive greater evidence weight. |
 | Domain-specific leadership | Leader status applies only to the focal topic. |
 
-These representations adapt selected ideas from two-step-flow theory to the current framework. Because ordinary agents may also originate posts and the external-information stage is not simulated, the model represents leader-amplified social diffusion rather than a literal or complete two-step flow.
+These representations adapt selected ideas from two-step-flow theory to the current framework. Because ordinary agents may also originate posts, the model represents leader-amplified interpersonal diffusion within the post-entry stage rather than a literal two-step sequence.
 
 ## Entities, states, and communication roles
 
@@ -64,11 +64,11 @@ Unequal influence has two separable components:
 1. **Exposure or reach:** whether and how widely a message is received.
 2. **Evidence weight:** how strongly a received message affects the recipient's belief update.
 
-Messages retain producer identity so that leader and ordinary messages can receive different weights. The substantive interpretation of a larger leader weight—such as credibility, persuasion, or evidential strength—remains open.
+Messages retain producer identity so that leader and ordinary messages can receive different weights. Ordinary messages provide the reference weight, and opinion-leader messages receive a relative evidence multiplier. Recipient role does not alter this multiplier. The substantive interpretation of a larger leader weight—such as credibility, persuasion, or evidential strength—and its numerical magnitude remain open.
 
 ## Opinion updating
 
-Each recipient aggregates the messages received during the round and updates its private Beta belief once. Raw exposure counts and weighted evidence remain distinguishable so that message availability is not conflated with influence.
+Each recipient aggregates the messages received during the round and updates its private Beta belief once. Raw exposure counts and weighted evidence remain distinguishable so that message availability is not conflated with influence. For the bounded mechanism definition, see [Message Aggregation](message-aggregation.md).
 
 ## Round schedule
 
@@ -85,8 +85,8 @@ An updated belief can affect message origination only from the next round onward
 
 ## Current boundaries and open decisions
 
-The current case includes ordinary-agent and leader message origination, deterministic tie-bound diffusion through a fixed social network, and opinion updating. It excludes a separate message-production decision, a press entity, externally scheduled press messages, stochastic or out-of-tie delivery, attention competition, message forwarding, network adaptation, algorithmic ranking, out-of-network recommendation, and engagement-driven platform feedback.
+The current case includes ordinary-agent and leader message origination, deterministic tie-bound diffusion through a fixed social network, source-dependent evidence aggregation, and opinion updating. It excludes a separate message-production decision, stochastic or out-of-tie delivery, attention competition, message forwarding, network adaptation, algorithmic ranking, out-of-network recommendation, and engagement-driven platform feedback.
 
-The current basic decisions are the decaying logistic origination probability, the leader log-odds advantage, the Beta-tail stance mapping documented in [Posting Origination](posting-origination.md), and the deterministic tied-delivery rule documented in [Message Selection](message-selection.md). Open decisions include parameter justification or calibration, initialization of the fixed network and leader positions, the meaning and magnitude of leader evidence weight, and whether leader access to prior external information requires a distinct initialization mechanism.
+The current basic decisions are the decaying logistic origination probability, the leader log-odds advantage, the Beta-tail stance mapping documented in [Posting Origination](posting-origination.md), the deterministic tied-delivery rule documented in [Message Selection](message-selection.md), and the source-only relative weighting rule documented in [Message Aggregation](message-aggregation.md). Open decisions include parameter justification or calibration, initialization of the fixed network and leader positions, the meaning and magnitude of leader evidence weight, and whether leader access to prior information requires a distinct initialization mechanism.
 
 Leader initialization, origination advantage, structural reach, and evidence weight should remain separable so that their individual and combined effects can later be examined.
