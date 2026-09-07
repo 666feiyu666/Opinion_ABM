@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from opinion_model.baseline.message_production import support_probability
+from opinion_model.baseline.message_origination import beta_tail_support_probability
 from opinion_model.baseline.simulation import SimulationResult
 from opinion_model.core import WorldState
 
@@ -22,16 +22,16 @@ def _state_rows(state: WorldState) -> list[dict[str, float | int]]:
                 "mean": belief.mean,
                 "signed_mean": belief.signed_mean,
                 "concentration": belief.concentration,
-                "p_support_message": support_probability(agent_state),
+                "p_support_message": beta_tail_support_probability(agent_state),
             }
         )
     return rows
 
 
 def simulation_frames(result: SimulationResult) -> dict[str, pd.DataFrame]:
-    """Return reconstructable state, production, message, exposure, and update tables."""
+    """Return reconstructable state, origination, exposure, and update tables."""
     state_rows = _state_rows(result.initial_state)
-    production_rows = []
+    origination_rows = []
     message_rows = []
     exposure_rows = []
     aggregate_rows = []
@@ -45,14 +45,14 @@ def simulation_frames(result: SimulationResult) -> dict[str, pd.DataFrame]:
         state_rows.extend(_state_rows(next_state))
         world_states.append(next_state)
 
-        for outcome in events.production_outcomes:
-            production_rows.append(
+        for outcome in events.origination_outcomes:
+            origination_rows.append(
                 {
                     "round": outcome.round_index,
                     "agent_id": outcome.agent_id,
-                    "did_post": outcome.did_post,
-                    "post_probability": outcome.post_probability,
-                    "p_support_at_production": outcome.support_probability,
+                    "did_originate": outcome.did_originate,
+                    "origination_probability": outcome.origination_probability,
+                    "p_support_at_origination": outcome.support_probability,
                     "message_id": (
                         outcome.message.message_id
                         if outcome.message is not None
@@ -67,7 +67,7 @@ def simulation_frames(result: SimulationResult) -> dict[str, pd.DataFrame]:
                         "message_id": outcome.message.message_id,
                         "producer_id": outcome.message.producer_id,
                         "stance": outcome.message.stance,
-                        "p_support_at_production": outcome.support_probability,
+                        "p_support_at_origination": outcome.support_probability,
                     }
                 )
 
@@ -128,14 +128,14 @@ def simulation_frames(result: SimulationResult) -> dict[str, pd.DataFrame]:
                 "p_support_message",
             ],
         ),
-        "production": pd.DataFrame(
-            production_rows,
+        "origination": pd.DataFrame(
+            origination_rows,
             columns=[
                 "round",
                 "agent_id",
-                "did_post",
-                "post_probability",
-                "p_support_at_production",
+                "did_originate",
+                "origination_probability",
+                "p_support_at_origination",
                 "message_id",
             ],
         ),
@@ -146,7 +146,7 @@ def simulation_frames(result: SimulationResult) -> dict[str, pd.DataFrame]:
                 "message_id",
                 "producer_id",
                 "stance",
-                "p_support_at_production",
+                "p_support_at_origination",
             ],
         ),
         "exposures": pd.DataFrame(

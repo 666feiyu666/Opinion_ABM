@@ -125,14 +125,14 @@ class BaselineSimulationTests(unittest.TestCase):
         self.assertAlmostEqual(final_states["signed_mean"].mean(), 0.3896103896103896)
 
     def test_event_counts_and_null_exposure(self):
-        production = self.frames["production"]
+        origination = self.frames["origination"]
         messages = self.frames["messages"]
         exposures = self.frames["exposures"]
         aggregates = self.frames["aggregates"]
         states = self.frames["states"]
 
-        self.assertEqual(len(production), 110)
-        self.assertTrue(production["did_post"].all())
+        self.assertEqual(len(origination), 110)
+        self.assertTrue(origination["did_originate"].all())
         self.assertEqual(len(messages), 110)
         self.assertEqual(len(exposures), 1_100)
         self.assertEqual(len(aggregates), 110)
@@ -167,11 +167,15 @@ class BaselineSimulationTests(unittest.TestCase):
         self.assertTrue(np.allclose(states["a"], 2.0))
         self.assertTrue(np.allclose(states["b"], 2.0))
 
-    def test_zero_post_probability_records_opportunities_without_messages(self):
-        config = replace(self.config, rounds=2, post_probability=0.0)
+    def test_zero_origination_probability_records_silence(self):
+        config = replace(
+            self.config,
+            rounds=2,
+            base_origination_probability=0.0,
+        )
         frames = simulation_frames(run_simulation(config))
-        self.assertEqual(len(frames["production"]), 22)
-        self.assertFalse(frames["production"]["did_post"].any())
+        self.assertEqual(len(frames["origination"]), 22)
+        self.assertFalse(frames["origination"]["did_originate"].any())
         self.assertTrue(frames["messages"].empty)
         self.assertTrue(frames["exposures"].empty)
         self.assertIn("stance", frames["messages"].columns)
@@ -192,7 +196,7 @@ class BaselineSimulationTests(unittest.TestCase):
         )
         sort_keys = {
             "states": ["round", "agent_id"],
-            "production": ["round", "agent_id"],
+            "origination": ["round", "agent_id"],
             "messages": ["round", "producer_id"],
             "exposures": ["round", "consumer_id", "producer_id"],
             "aggregates": ["round", "consumer_id"],

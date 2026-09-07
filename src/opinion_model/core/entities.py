@@ -75,13 +75,13 @@ class Message:
 
 
 @dataclass(frozen=True)
-class ProductionOutcome:
-    """Result of giving one agent one production opportunity."""
+class OriginationOutcome:
+    """Result of one agent's message-origination draw."""
 
     round_index: int
     agent_id: int
-    did_post: bool
-    post_probability: float
+    did_originate: bool
+    origination_probability: float
     support_probability: float
     message: Message | None
 
@@ -89,13 +89,13 @@ class ProductionOutcome:
         _nonnegative_integer(self.round_index, "round_index")
         _nonnegative_integer(self.agent_id, "agent_id")
         if self.round_index == 0:
-            raise ValueError("Production occurs only in rounds 1 and later.")
-        if not isinstance(self.did_post, bool):
-            raise ValueError("did_post must be Boolean.")
-        _probability(self.post_probability, "post_probability")
+            raise ValueError("Origination occurs only in rounds 1 and later.")
+        if not isinstance(self.did_originate, bool):
+            raise ValueError("did_originate must be Boolean.")
+        _probability(self.origination_probability, "origination_probability")
         _probability(self.support_probability, "support_probability")
-        if self.did_post != (self.message is not None):
-            raise ValueError("did_post and message presence must agree.")
+        if self.did_originate != (self.message is not None):
+            raise ValueError("did_originate and message presence must agree.")
         if self.message is not None:
             if self.message.round_index != self.round_index:
                 raise ValueError("Outcome and message rounds must agree.")
@@ -191,13 +191,16 @@ class WorldState:
 
 
 @dataclass(frozen=True)
-class ProductionContext:
+class OriginationContext:
     round_index: int
-    post_probability: float
+    base_origination_probability: float
 
     def __post_init__(self) -> None:
         _nonnegative_integer(self.round_index, "round_index")
-        _probability(self.post_probability, "post_probability")
+        _probability(
+            self.base_origination_probability,
+            "base_origination_probability",
+        )
 
 
 @dataclass(frozen=True)
@@ -234,7 +237,7 @@ class NetworkUpdateContext:
 class RoundEvents:
     """Complete events and aggregates produced before synchronous commit."""
 
-    production_outcomes: tuple[ProductionOutcome, ...]
+    origination_outcomes: tuple[OriginationOutcome, ...]
     exposures: tuple[Exposure, ...]
     evidence_by_agent: Mapping[int, MessageEvidence]
 

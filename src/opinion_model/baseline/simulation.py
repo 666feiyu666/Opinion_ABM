@@ -10,7 +10,7 @@ import numpy as np
 from opinion_model.baseline.config import SimulationConfig
 from opinion_model.baseline.initialization import initialize_baseline
 from opinion_model.baseline.message_aggregation import aggregate_messages
-from opinion_model.baseline.message_production import produce_message
+from opinion_model.baseline.message_origination import originate_message
 from opinion_model.baseline.message_selection import select_messages
 from opinion_model.baseline.network_update import propose_static_network
 from opinion_model.baseline.opinion_update import propose_opinion_update
@@ -19,14 +19,13 @@ from opinion_model.core import (
     AgentState,
     AggregationContext,
     MessageAggregation,
-    MessageProduction,
+    MessageOrigination,
     MessageSelection,
     NetworkState,
     NetworkUpdate,
     NetworkUpdateContext,
     OpinionUpdate,
-    ProductionContext,
-    ProductionOutcome,
+    OriginationContext,
     RoundEvents,
     SelectionContext,
     WorldState,
@@ -41,7 +40,7 @@ class ModelComponents:
     """Replaceable scientific rules called by the shared scheduler."""
 
     initializer: Initializer
-    message_production: MessageProduction
+    message_origination: MessageOrigination
     message_selection: MessageSelection
     message_aggregation: MessageAggregation
     opinion_update: OpinionUpdate
@@ -68,7 +67,7 @@ class SimulationResult:
 
 BASELINE_COMPONENTS = ModelComponents(
     initializer=initialize_baseline,
-    message_production=produce_message,
+    message_origination=originate_message,
     message_selection=select_messages,
     message_aggregation=aggregate_messages,
     opinion_update=propose_opinion_update,
@@ -99,17 +98,17 @@ def run_round(
     """Compute all events and proposals from one snapshot, then commit together."""
     order = _validated_agent_order(snapshot, agent_order)
     round_index = snapshot.round_index + 1
-    production_context = ProductionContext(
+    origination_context = OriginationContext(
         round_index=round_index,
-        post_probability=config.post_probability,
+        base_origination_probability=config.base_origination_probability,
     )
 
     outcomes = tuple(
-        components.message_production(
+        components.message_origination(
             agent_id,
             snapshot.agents[agent_id],
-            production_context,
-            random_streams.posting(round_index, agent_id),
+            origination_context,
+            random_streams.origination(round_index, agent_id),
             random_streams.stance(round_index, agent_id),
         )
         for agent_id in order
@@ -150,7 +149,7 @@ def run_round(
         evidence_by_agent[consumer_id] = evidence
 
     events = RoundEvents(
-        production_outcomes=outcomes,
+        origination_outcomes=outcomes,
         exposures=tuple(
             sorted(
                 exposures,
