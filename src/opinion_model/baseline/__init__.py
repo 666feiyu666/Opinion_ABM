@@ -10,9 +10,9 @@ from opinion_model.baseline.initialization import (
     initialize_baseline,
 )
 from opinion_model.baseline.message_aggregation import aggregate_messages
-from opinion_model.baseline.message_production import (
-    produce_message,
-    support_probability,
+from opinion_model.baseline.message_origination import (
+    beta_tail_support_probability,
+    originate_message,
 )
 from opinion_model.baseline.message_selection import select_messages
 from opinion_model.baseline.network_update import propose_static_network
@@ -38,12 +38,12 @@ __all__ = [
     "aggregate_messages",
     "belief_from_mean_concentration",
     "initialize_baseline",
-    "produce_message",
+    "beta_tail_support_probability",
+    "originate_message",
     "propose_opinion_update",
     "propose_static_network",
     "run_round",
     "run_simulation",
     "select_messages",
     "simulation_frames",
-    "support_probability",
 ]
