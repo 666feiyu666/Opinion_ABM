@@ -6,7 +6,7 @@ Transform Opinion Leadership in Opinion Dynamics.
 This repository provides the shared implementation for comparing three
 information environments:
 
-- `baseline` / `null`: the control model with homogeneous message
+- `null`: the control model with homogeneous message
   origination, selection, aggregation, and a static network;
 - `opleader`: interpersonal diffusion with opinion-leader origination and
   source-weight advantages;
