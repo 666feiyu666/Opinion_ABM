@@ -37,7 +37,7 @@ uv run --locked python experiments/run_leader_effects.py --profile trial --scena
 ## Thesis
 
 The thesis PDF is not stored in this GitHub repository. It is available on
-[ResearchGate](https://www.researchgate.net/publication/405540855_Undergraduate_Senior_ThesisOpinion_Leader_Influence_in_Agent-Based_Online_Opinion_Dynamics)
+[ResearchGate](https://www.researchgate.net/publication/414083676_Undergraduate_Senior_ThesisOpinion_Leader_Influence_in_Agent-Based_Online_Opinion_Dynamics?channel=doi&linkId=6a9fcd4bdc40dc35492bc162&showFulltext=true)
 and has DOI
 [`10.13140/RG.2.2.11911.56480`](https://doi.org/10.13140/RG.2.2.11911.56480).
 
