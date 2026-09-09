@@ -4,7 +4,7 @@ OLIM is an agent-based model of how opinion leaders, content circulation,
 opinion updating, and adaptive follower networks jointly shape online opinion
 dynamics. This `legacy` branch preserves the implementation and experiment
 artifacts developed for Feiyu Tang's 2026 undergraduate senior thesis at the
-ZJU-UIUC Institute, supervised by Pavel Loskot.
+ZJU-UIUC Institute, supervised by Prof. Pavel Loskot.
 
 This branch is retained as a reproducible thesis-era snapshot. It is not the
 active general-framework branch.
@@ -39,7 +39,7 @@ uv run --locked python experiments/run_leader_effects.py --profile trial --scena
 The thesis PDF is not stored in this GitHub repository. It is available on
 [ResearchGate](https://www.researchgate.net/publication/405540855_Undergraduate_Senior_ThesisOpinion_Leader_Influence_in_Agent-Based_Online_Opinion_Dynamics)
 and has DOI
-[`10.13140/RG.2.2.17881.28001`](https://doi.org/10.13140/RG.2.2.17881.28001).
+[`10.13140/RG.2.2.11911.56480`](https://doi.org/10.13140/RG.2.2.11911.56480).
 
 ## Citation
 
@@ -47,7 +47,7 @@ Suggested citation for the thesis and its findings:
 
 > Tang, F. (2026). *Opinion leader influence in agent-based online opinion
 > dynamics* [Undergraduate senior thesis, ZJU-UIUC Institute]. ResearchGate.
-> https://doi.org/10.13140/RG.2.2.17881.28001
+> https://doi.org/10.13140/RG.2.2.11911.56480
 
 ## Scope
 
