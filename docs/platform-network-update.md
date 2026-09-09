@@ -1,6 +1,6 @@
 # Platform Network Update
 
-> **Status:** Rough mechanism definition for review
+> **Status:** Implemented working mechanism definition
 >
 > **Case:** `platform`
 
@@ -154,13 +154,35 @@ consumer to originate a message or possess a separately stored public stance.
 
 ## Tie-formation probability
 
+Let $N=|V|$ and normalize the start-of-round following degree as
+
+$$
+d_i^t=\frac{k_i^t}{N-1},
+\qquad
+z_i^t=2d_i^t-1.
+$$
+
+Thus, $z_i^t=-1$ represents no following ties, $z_i^t=0$ represents half of
+the maximum possible following degree, and $z_i^t=1$ represents the maximum
+possible following degree. Normalization keeps the degree term comparable when
+the population size changes.
+
 For each $j\in\mathcal{F}_i^t$, the probability of proposing a new tie is
 
 $$
-p_{ij,+}^t=f_{+}(k_i^t,a_{ij}^t).
+p_{ij,+}^t
+=
+\sigma\!\left(
+\operatorname{logit}(\pi_+)
+-\beta_{+,k}z_i^t
++\beta_{+,a}a_{ij}^t
+\right).
 $$
 
-The working qualitative requirements are
+Here, $\pi_+\in(0,1)$ is the formation probability at half of the maximum
+following degree and neutral alignment. The coefficients $\beta_{+,k}>0$ and
+$\beta_{+,a}>0$ are degree and alignment effects on the log-odds scale. The
+resulting qualitative relationships are
 
 $$
 \frac{\partial f_{+}}{\partial k_i^t}<0,
@@ -176,7 +198,9 @@ $$
 Z_{ij,+}^t\sim\operatorname{Bernoulli}(p_{ij,+}^t).
 $$
 
-The exact functional form and parameter values of $f_{+}$ remain open.
+Finite parameter values keep the probability strictly between zero and one.
+The numerical parameter values remain open to sensitivity analysis or later
+calibration.
 
 ## Tie-dissolution probability
 
@@ -184,10 +208,19 @@ For each $j\in\mathcal{U}_i^t$, the probability of proposing removal of the
 existing tie is
 
 $$
-p_{ij,-}^t=f_{-}(k_i^t,a_{ij}^t).
+p_{ij,-}^t
+=
+\sigma\!\left(
+\operatorname{logit}(\pi_-)
++\beta_{-,k}z_i^t
+-\beta_{-,a}a_{ij}^t
+\right).
 $$
 
-The working qualitative requirements are
+Here, $\pi_-\in(0,1)$ is the dissolution probability at half of the maximum
+following degree and neutral alignment. The coefficients $\beta_{-,k}>0$ and
+$\beta_{-,a}>0$ are degree and alignment effects on the log-odds scale. The
+resulting qualitative relationships are
 
 $$
 \frac{\partial f_{-}}{\partial k_i^t}>0,
@@ -203,9 +236,10 @@ $$
 Z_{ij,-}^t\sim\operatorname{Bernoulli}(p_{ij,-}^t).
 $$
 
-The exact functional form and parameter values of $f_{-}$ remain open. Even at
-low degree, dissolution is not prohibited; its probability is only expected to
-be lower.
+Finite parameter values keep the probability strictly between zero and one.
+Even at low degree, dissolution is not prohibited; its probability is only
+lower. The numerical parameter values remain open to sensitivity analysis or
+later calibration.
 
 ## Multiple decisions within one round
 
@@ -263,11 +297,11 @@ platform-mediated encounters; they are not direct platform ranking decisions.
 They are included in the `platform` mechanism family because out-of-network
 selection creates the encounters through which the network can change.
 
-The exposure-based candidate sets, degree and alignment directions, soft
-isolation tendency, producer-level decisions, $K=10$ opportunity bound, and
-synchronous commitment are current working decisions. The alignment score is a
-working representation for review. The forms and parameters of $f_{+}$ and
-$f_{-}$ remain unresolved.
+The exposure-based candidate sets, normalized-degree logistic probability
+forms, Beta-tail alignment, soft isolation tendency, producer-level decisions,
+$K=10$ opportunity bound, and synchronous commitment are current working
+decisions. The numerical values of the formation and dissolution parameters
+remain unresolved.
 
 The current mechanism excludes a fixed target degree, forced one-for-one
 rewiring, guaranteed connectivity, triadic closure, reciprocity preference,

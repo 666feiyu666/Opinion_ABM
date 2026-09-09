@@ -1,45 +1,25 @@
 # Opinion Model
 
-A shared agent-based framework for studying how agent state shapes information
-and how consumed information changes agent state.
+## Platform Branch
 
-## Scope
+`platform` develops an agent-based model of uniform platform-mediated message
+reach beyond existing social ties and exposure-driven adaptation of a directed
+following network.
 
-`main` contains the general contracts and null baseline. Platform behavior,
-opinion leadership, action, delivery, consumption, and network adaptation belong
-to explicit cases.
+The current model contains ordinary agents with private Beta beliefs. Messages
+from followed producers become available deterministically, while messages from
+untied producers become available through a Bernoulli platform process. All
+available messages compete equally for finite attention. Processed exposures
+update beliefs and create opportunities to form or dissolve following ties,
+with network changes taking effect in the next synchronous round.
 
-- `opleader`: opinion-leader case.
-- `platform`: platform-distribution case.
-- `legacy`: preserves the implementation and experiment artifacts developed for Feiyu Tang's 2026 undergraduate senior thesis at the ZJU-UIUC Institute, supervised by Prof. Pavel Loskot
+Current design documents:
 
-The scientific specification will be later provided as an ODD document.
+- [Platform-Mediated Opinion Dynamics: Rough Design](docs/platform-mediated-opinion-dynamics-rough-design.md)
+- [Platform Message Selection](docs/platform-message-selection.md)
+- [Platform Network Update](docs/platform-network-update.md)
 
-## Current Goal
-Establish a minimal shared baseline
-The baseline should contain:
-- a precisely defined latent attitude;
-- a precisely defined observable message;
-- a neutral source/message selection process;
-- one justified attitude-update mechanism;
-- an explicit multi-message aggregation rule;
-- a fixed activation and update schedule;
-- no opinion-leader advantage;
-- no algorithmic platform preference.
-This baseline becomes the control model used by both scenario families.
-
-## Tips on Buliding
-For every function, record:
-- inputs and outputs;
-- substantive meaning;
-- boundary behavior;
-- randomness;
-- qualitative expectations;
-- empirical or theoretical basis;
-- plausible alternative formulation.
-For example, before choosing an update equation, decide what should happen under no exposure, unanimous exposure, balanced conflicting exposure, moderate disagreement, and extreme disagreement.
-
-## Quick check
+## Quick Check
 
 ```powershell
 uv sync --locked

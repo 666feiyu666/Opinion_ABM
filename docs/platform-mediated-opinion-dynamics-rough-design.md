@@ -1,6 +1,6 @@
 # Platform-Mediated Opinion Dynamics: Rough Design
 
-> **Status:** Initial rough design for review
+> **Status:** Implemented initial design
 >
 > **Case:** `platform`
 >
@@ -125,7 +125,10 @@ Lower-degree agents are more likely to form ties and less likely to dissolve
 them. Greater alignment increases formation probability and decreases
 dissolution probability. Alignment is calculated from the Beta probability mass
 on the supportive side and therefore uses both the belief mean and
-concentration.
+concentration. Formation and dissolution use logistic probabilities with degree
+normalized by the maximum possible following degree. Their intercepts describe
+the probability at half degree and neutral alignment, while positive degree and
+alignment coefficients act on the log-odds scale.
 
 Isolation remains possible rather than being prohibited. Low degree creates a
 soft tendency toward connection, and platform-mediated out-of-network exposures
@@ -196,11 +199,12 @@ equal attention competition between source channels, $K=10$, Beta-tail
 alignment, soft degree regulation, producer-level network decisions, possible
 isolation, and synchronous next-round commitment.
 
-Open decisions include the numerical value of $\rho$; the exact functional
-forms and parameters for tie formation and dissolution; the initialization and
-scale of the directed network; and whether parameter values should vary with
-population size. These questions remain open rather than being filled by the
-historical OLIM implementation automatically.
+Open decisions include the numerical value of $\rho$; the parameter values for
+tie formation and dissolution; and the initialization and scale of the directed
+network. Degree normalization removes a mechanical dependence on population
+size, but whether substantive parameter values should differ across population
+sizes remains an empirical question. These questions remain open rather than
+being filled by the historical OLIM implementation automatically.
 
 The current case excludes opinion leaders, source-dependent evidence weight,
 personalization, stance or similarity ranking, popularity and engagement

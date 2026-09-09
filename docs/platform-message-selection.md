@@ -1,6 +1,6 @@
 # Platform Message Selection
 
-> **Status:** Working mechanism definition for review
+> **Status:** Implemented working mechanism definition
 >
 > **Case:** `platform`
 
