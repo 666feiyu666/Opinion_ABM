@@ -12,5 +12,5 @@ htmlcov/
 .DS_Store
 outputs/
 AGENTS.md 
+# temp local storage for notebooks
 notebooks/*
-!notebooks/baseline_simulation.ipynb

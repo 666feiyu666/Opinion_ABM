@@ -1,10 +1,55 @@
-# Integrated baseline experiment configuration.
-#
-# Only identity and maturity are recorded now. Scientific parameter values,
-# initialization choices, seeds, metrics, and run counts will be added after
-# the baseline simulation-design discussion.
+# Exploratory integrated baseline. These are transparent working assumptions,
+# not calibrated estimates or a claim of exact senior-thesis replication.
 
 [experiment]
 id = "baseline"
-scenario = "baseline"
-status = "design-pending"
+status = "exploratory"
+seeds = [
+  20260910,
+  20260911,
+  20260912,
+  20260913,
+  20260914,
+  20260915,
+  20260916,
+  20260917,
+  20260918,
+  20260919,
+]
+orientations = [
+  "positive",
+  "negative",
+  "balanced_positive",
+  "balanced_negative",
+]
+extremism_threshold = 0.8
+
+[simulation]
+agent_count = 500
+rounds = 50
+base_origination_probability = 0.10
+evidence_weight = 0.10
+consumption_capacity = 10
+exclude_self_messages = true
+
+[initialization]
+network_m = 3
+leader_share = 0.03
+ordinary_mean_alpha = 2.0
+ordinary_concentration = 4.0
+leader_positive_a = 18.0
+leader_positive_b = 2.0
+
+[opinion_leader]
+interest_decay = 0.02
+leader_log_odds_advantage = 1.0986122886681098
+leader_evidence_multiplier = 1.5
+
+[platform]
+out_of_network_availability_probability = 0.04
+formation_midpoint_probability = 0.0035
+formation_degree_log_odds_strength = 1.0986122886681098
+formation_alignment_log_odds_strength = 1.0986122886681098
+dissolution_midpoint_probability = 0.11
+dissolution_degree_log_odds_strength = 1.0986122886681098
+dissolution_alignment_log_odds_strength = 1.0986122886681098
