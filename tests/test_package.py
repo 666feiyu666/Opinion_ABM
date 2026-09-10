@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 import opinion_model
-from opinion_model import core, interfaces, opleader, platform, shared
+from opinion_model import core, interfaces, opleader, platform, scenarios, shared
 
 
 class PackageStructureTests(unittest.TestCase):
@@ -22,6 +22,7 @@ class PackageStructureTests(unittest.TestCase):
         self.assertTrue(shared.__doc__)
         self.assertTrue(opleader.__doc__)
         self.assertTrue(platform.__doc__)
+        self.assertTrue(scenarios.__doc__)
 
     def test_core_contracts_are_structural(self):
         class Formation:

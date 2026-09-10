@@ -1,0 +1,10 @@
+# Integrated baseline experiment configuration.
+#
+# Only identity and maturity are recorded now. Scientific parameter values,
+# initialization choices, seeds, metrics, and run counts will be added after
+# the baseline simulation-design discussion.
+
+[experiment]
+id = "baseline"
+scenario = "baseline"
+status = "design-pending"
