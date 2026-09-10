@@ -12,8 +12,8 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import (
-    BASELINE_COMPONENTS,
+from opinion_model.shared import (
+    DEFAULT_COMPONENTS,
     SimulationConfig,
     run_simulation,
     simulation_frames,
@@ -36,7 +36,7 @@ class OpinionLeaderIntegrationTests(unittest.TestCase):
             consumption_capacity=10,
         )
         self.components = replace(
-            BASELINE_COMPONENTS,
+            DEFAULT_COMPONENTS,
             message_origination=OpinionLeaderMessageOrigination(
                 leader_ids=self.leader_ids,
                 interest_decay=0.03,
@@ -100,10 +100,10 @@ class OpinionLeaderIntegrationTests(unittest.TestCase):
             observed = reverse[name].sort_values(keys).reset_index(drop=True)
             pd.testing.assert_frame_equal(expected, observed)
 
-    def test_neutral_parameters_reproduce_the_shared_baseline(self) -> None:
+    def test_neutral_parameters_reproduce_the_shared_defaults(self) -> None:
         config = replace(self.config, base_origination_probability=1.0)
         neutral_components = replace(
-            BASELINE_COMPONENTS,
+            DEFAULT_COMPONENTS,
             message_origination=OpinionLeaderMessageOrigination(
                 leader_ids=self.leader_ids,
                 interest_decay=0.0,
@@ -115,7 +115,7 @@ class OpinionLeaderIntegrationTests(unittest.TestCase):
                 leader_evidence_multiplier=1.0,
             ),
         )
-        expected = simulation_frames(run_simulation(config, BASELINE_COMPONENTS))
+        expected = simulation_frames(run_simulation(config, DEFAULT_COMPONENTS))
         observed = simulation_frames(run_simulation(config, neutral_components))
 
         for name in expected:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from opinion_model.baseline import SimulationResult
+from opinion_model.shared import SimulationResult
 from opinion_model.core import NetworkUpdateContext
 from opinion_model.platform.network_update import PlatformNetworkUpdate
 

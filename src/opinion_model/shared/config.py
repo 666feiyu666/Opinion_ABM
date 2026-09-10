@@ -1,4 +1,4 @@
-"""Configuration values for the coupled null baseline."""
+"""Configuration values shared by opinion-model simulations."""
 
 from __future__ import annotations
 

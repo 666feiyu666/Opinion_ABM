@@ -11,7 +11,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import beta_tail_support_probability
+from opinion_model.shared import beta_tail_support_probability
 from opinion_model.core import (
     AgentState,
     BetaBelief,

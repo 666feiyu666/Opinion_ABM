@@ -11,7 +11,7 @@ round become available to each agent and, subject to a finite processing
 capacity, which of those messages become exposures. The mechanism extends
 communication beyond existing network ties while retaining the same ordinary
 message-origination and homogeneous aggregation mechanisms as the shared
-baseline.
+framework.
 
 The current version represents the platform through uniform out-of-network
 reach. It does not rank messages by stance, source role, popularity, predicted

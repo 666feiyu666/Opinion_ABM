@@ -2,7 +2,7 @@
 
 The legacy generic contracts remain available. The explicit callable contracts
 separate message origination, exposure, evidence aggregation,
-opinion proposals, and network proposals for the coupled baseline.
+opinion proposals, and network proposals for the shared scheduler.
 """
 
 from __future__ import annotations

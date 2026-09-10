@@ -35,9 +35,9 @@ agents may originate messages from those beliefs.
 
 | Process | Current owner | Role in the `platform` case |
 |---|---|---|
-| Message origination | Shared baseline | Ordinary agents may originate one message whose stance is sampled from their Beta belief. |
+| Message origination | Shared framework | Ordinary agents may originate one message whose stance is sampled from their Beta belief. |
 | Message selection | `platform` | Existing-tie messages become available deterministically; out-of-network messages may become available through a Bernoulli draw; finite capacity determines processed exposures. |
-| Message aggregation and opinion update | Shared baseline | Every processed message contributes the same base evidence weight to the recipient's Beta update. |
+| Message aggregation and opinion update | Shared framework | Every processed message contributes the same base evidence weight to the recipient's Beta update. |
 | Network update | `platform` | Processed messages create opportunities to form or dissolve directed following ties according to degree and belief--message alignment. |
 
 Platform mechanisms do not silently change shared message semantics or the

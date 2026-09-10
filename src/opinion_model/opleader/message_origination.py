@@ -8,7 +8,7 @@ from math import isfinite, log, log1p
 import numpy as np
 from scipy.special import expit
 
-from opinion_model.baseline.message_origination import (
+from opinion_model.shared.message_origination import (
     beta_tail_support_probability,
 )
 from opinion_model.core import (

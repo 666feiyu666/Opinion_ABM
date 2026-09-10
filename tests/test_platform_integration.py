@@ -12,10 +12,10 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import (
-    BASELINE_COMPONENTS,
+from opinion_model.shared import (
+    DEFAULT_COMPONENTS,
     SimulationConfig,
-    initialize_baseline,
+    initialize_default,
     run_simulation,
     simulation_frames,
 )
@@ -28,8 +28,8 @@ from opinion_model.platform import (
 
 
 def initialize_sparse_ring(config, rng) -> WorldState:
-    baseline = initialize_baseline(config, rng)
-    agent_ids = tuple(baseline.agents)
+    default_state = initialize_default(config, rng)
+    agent_ids = tuple(default_state.agents)
     network = NetworkState(
         {
             consumer_id: (
@@ -39,7 +39,7 @@ def initialize_sparse_ring(config, rng) -> WorldState:
             for consumer_id in agent_ids
         }
     )
-    return WorldState(0, baseline.agents, network)
+    return WorldState(0, default_state.agents, network)
 
 
 class PlatformIntegrationTests(unittest.TestCase):
@@ -59,7 +59,7 @@ class PlatformIntegrationTests(unittest.TestCase):
             dissolution_alignment_log_odds_strength=log(3.0),
         )
         self.components = replace(
-            BASELINE_COMPONENTS,
+            DEFAULT_COMPONENTS,
             initializer=initialize_sparse_ring,
             message_selection=PlatformMessageSelection(0.5),
             network_update=self.network_rule,

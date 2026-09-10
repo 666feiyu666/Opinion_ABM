@@ -12,11 +12,11 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import (
-    BASELINE_COMPONENTS,
+from opinion_model.shared import (
+    DEFAULT_COMPONENTS,
     SimulationConfig,
     aggregate_messages,
-    initialize_baseline,
+    initialize_default,
     propose_opinion_update,
     propose_static_network,
     run_simulation,
@@ -36,7 +36,7 @@ from opinion_model.core import (
 )
 
 
-class BaselineRuleTests(unittest.TestCase):
+class SharedRuleTests(unittest.TestCase):
     def setUp(self):
         self.config = SimulationConfig()
 
@@ -68,7 +68,7 @@ class BaselineRuleTests(unittest.TestCase):
             )
             for producer_id in range(11)
         )
-        initial = initialize_baseline(
+        initial = initialize_default(
             self.config,
             np.random.default_rng(0),
         )
@@ -107,7 +107,7 @@ class BaselineRuleTests(unittest.TestCase):
         self.assertAlmostEqual(oppose_after.belief.b, 2.2)
 
     def test_static_network_rule_returns_same_network(self):
-        snapshot = initialize_baseline(self.config, np.random.default_rng(0))
+        snapshot = initialize_default(self.config, np.random.default_rng(0))
         events = RoundEvents((), (), {})
         proposed = propose_static_network(
             snapshot.network,
@@ -119,7 +119,7 @@ class BaselineRuleTests(unittest.TestCase):
         self.assertIs(proposed, snapshot.network)
 
 
-class BaselineSimulationTests(unittest.TestCase):
+class SharedSimulationTests(unittest.TestCase):
     def setUp(self):
         self.config = SimulationConfig()
         self.result = run_simulation(self.config)
@@ -226,7 +226,7 @@ class BaselineSimulationTests(unittest.TestCase):
             return MessageEvidence(0, 0, 0.0, 0.0)
 
         components = replace(
-            BASELINE_COMPONENTS,
+            DEFAULT_COMPONENTS,
             message_aggregation=ignore_messages,
         )
         config = replace(self.config, rounds=2)
