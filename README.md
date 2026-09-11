@@ -35,21 +35,3 @@ Platform case:
 Full framework:
 
 - [Matched four-scenario comparison](docs/full-model-comparison.md)
-
-## Quick Check
-
-```powershell
-uv sync --locked
-uv run --locked python -m unittest discover -s tests -v
-```
-
-Run the complete matched comparison:
-
-```powershell
-uv run --locked python scripts/run_comparison.py
-```
-
-Individual scenarios use `scripts/run_baseline.py`, `scripts/run_null.py`,
-`scripts/run_opleader.py`, or `scripts/run_platform.py`. Generated outputs are
-written below the ignored `outputs/` directory with their resolved configuration
-and Git revision.
