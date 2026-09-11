@@ -1,4 +1,4 @@
-"""Configuration values for the coupled null baseline."""
+"""Configuration values shared by opinion-model simulations."""
 
 from __future__ import annotations
 
@@ -40,6 +40,8 @@ class SimulationConfig:
             raise ValueError("evidence_weight must be finite and non-negative.")
         if not isinstance(self.exclude_self_messages, bool):
             raise ValueError("exclude_self_messages must be Boolean.")
-        eligible_limit = self.agent_count - 1 if self.exclude_self_messages else self.agent_count
+        if not self.exclude_self_messages:
+            raise ValueError("exclude_self_messages must be True.")
+        eligible_limit = self.agent_count - 1
         if self.consumption_capacity > eligible_limit:
             raise ValueError("consumption_capacity exceeds the maximum eligible source count.")

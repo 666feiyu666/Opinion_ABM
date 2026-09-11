@@ -1,11 +1,11 @@
-"""Read-only conversion of baseline events and states to analysis tables."""
+"""Read-only conversion of simulation events and states to analysis tables."""
 
 from __future__ import annotations
 
 import pandas as pd
 
-from opinion_model.baseline.message_origination import beta_tail_support_probability
-from opinion_model.baseline.simulation import SimulationResult
+from opinion_model.shared.message_origination import beta_tail_support_probability
+from opinion_model.shared.simulation import SimulationResult
 from opinion_model.core import WorldState
 
 

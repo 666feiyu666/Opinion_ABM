@@ -11,7 +11,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import beta_tail_support_probability
+from opinion_model.shared import beta_tail_support_probability
 from opinion_model.core import (
     AgentState,
     BetaBelief,
@@ -37,6 +37,24 @@ class CountingRng:
 
 
 class OriginationProbabilityTests(unittest.TestCase):
+    def test_closed_interval_boundaries_match_shared_configuration(self) -> None:
+        for base_probability in (0.0, 1.0):
+            for is_leader in (False, True):
+                with self.subTest(
+                    base_probability=base_probability,
+                    is_leader=is_leader,
+                ):
+                    self.assertEqual(
+                        origination_probability(
+                            base_origination_probability=base_probability,
+                            round_index=50,
+                            is_leader=is_leader,
+                            interest_decay=0.5,
+                            leader_log_odds_advantage=log(4.0),
+                        ),
+                        base_probability,
+                    )
+
     def test_hand_calculable_leader_odds_multiplier(self) -> None:
         ordinary = origination_probability(
             base_origination_probability=0.2,
@@ -134,8 +152,8 @@ class OriginationProbabilityTests(unittest.TestCase):
             "leader_log_odds_advantage": 0.0,
         }
         invalid_changes = (
-            {"base_origination_probability": 0.0},
-            {"base_origination_probability": 1.0},
+            {"base_origination_probability": -0.01},
+            {"base_origination_probability": 1.01},
             {"base_origination_probability": float("nan")},
             {"round_index": 0},
             {"round_index": True},

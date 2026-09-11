@@ -8,7 +8,7 @@ from math import isfinite, log, log1p
 import numpy as np
 from scipy.special import expit
 
-from opinion_model.baseline.message_origination import (
+from opinion_model.shared.message_origination import (
     beta_tail_support_probability,
 )
 from opinion_model.core import (
@@ -37,10 +37,8 @@ def origination_probability(
     decay = float(interest_decay)
     leader_advantage = float(leader_log_odds_advantage)
 
-    if not isfinite(base_probability) or not 0.0 < base_probability < 1.0:
-        raise ValueError(
-            "base_origination_probability must lie strictly between 0 and 1."
-        )
+    if not isfinite(base_probability) or not 0.0 <= base_probability <= 1.0:
+        raise ValueError("base_origination_probability must lie in [0, 1].")
     if (
         isinstance(round_index, bool)
         or not isinstance(round_index, int)
@@ -55,6 +53,9 @@ def origination_probability(
         raise ValueError(
             "leader_log_odds_advantage must be finite and non-negative."
         )
+
+    if base_probability in (0.0, 1.0):
+        return base_probability
 
     base_log_odds = log(base_probability) - log1p(-base_probability)
     linear_predictor = (

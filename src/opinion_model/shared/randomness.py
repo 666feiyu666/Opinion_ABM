@@ -1,4 +1,4 @@
-"""Independent, reproducible random streams for baseline mechanisms."""
+"""Independent, reproducible random streams for shared mechanisms."""
 
 from __future__ import annotations
 

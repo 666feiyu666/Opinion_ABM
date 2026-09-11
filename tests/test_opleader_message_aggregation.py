@@ -9,7 +9,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import aggregate_messages, propose_opinion_update
+from opinion_model.shared import aggregate_messages, propose_opinion_update
 from opinion_model.core import (
     AgentState,
     AggregationContext,
@@ -128,7 +128,7 @@ class OpinionLeaderMessageAggregationTests(unittest.TestCase):
 
         self.assertEqual(evidence, MessageEvidence(0, 1, 0.0, 0.0))
 
-    def test_unit_multiplier_reproduces_baseline_aggregation(self) -> None:
+    def test_unit_multiplier_reproduces_shared_aggregation(self) -> None:
         aggregator = OpinionLeaderMessageAggregation(
             leader_ids=self.LEADER_IDS,
             leader_evidence_multiplier=1.0,

@@ -1,22 +1,22 @@
 # Message Selection
 
-> **Status:** Working mechanism definition
+> **Status:** Implemented mechanism definition
 >
 > **Case:** `opleader`
 
 ## Purpose and boundary
 
-Message selection determines which messages originated in the current round become exposures for each agent. The mechanism operates within a fixed social network containing opinion-leader and ordinary-agent nodes. The ties represent reciprocal regular interpersonal relationships rather than a follower system, and the network does not adapt during the simulation.
+Message selection determines which messages originated in the current round become exposures for each agent. The mechanism operates within a fixed directed information-access network containing opinion-leader and ordinary-agent nodes. A recorded tie identifies a producer whose current-round message is available to a particular consumer, and the network does not adapt during the simulation.
 
 The current rule is deliberately narrow: messages travel only through regular interpersonal relationships, and delivery through those relationships is deterministic. Opinion-leader status does not create a separate delivery privilege inside the selection function.
 
 ## Social-network meaning
 
-Let $G=(V,E)$ be the social network initialized before the first round. A tie $\{i,j\}\in E$ represents a reciprocal regular interpersonal relationship through which $i$ and $j$ can communicate about the focal topic. The same network is retained in every round; messages and opinion changes do not create, remove, or rewire ties.
+Let $G=(V,E)$ be the social network initialized before the first round. A directed tie $(i,j)\in E$ means that consumer $i$ can receive a current-round message originated by producer $j$. The same network is retained in every round; messages and opinion changes do not create, remove, or rewire ties.
 
-The shared software representation records eligible producers for each consumer. A reciprocal social tie is therefore represented in both directions: if $i$ and $j$ are tied, $j$ is an eligible producer for $i$ and $i$ is an eligible producer for $j$. This is an encoding of interpersonal access, not a leader--follower relation.
+The exploratory scenario begins with an undirected Barabasi-Albert graph and assigns one random direction to each edge using a seed-matched initialization stream. The software representation then records eligible producers for each consumer. This working representation is shared with `main` and `null`; a reciprocal-network alternative is parked for later robustness work rather than mixed into the matched comparison.
 
-Opinion leaders may be assigned more or differently positioned social ties at initialization. Their network position is an exogenous model condition rather than an outcome of communication during the simulation.
+Opinion leaders are selected as the top three percent of agents by producer in-degree. Their structural reach is therefore an exogenous initial condition rather than an outcome of communication during the simulation.
 
 ## Working definition
 
@@ -59,7 +59,7 @@ Selection does not inspect the producer's role or the message stance. Conditiona
 
 Attention competition is not part of the current mechanism. Any configured consumption capacity must be large enough to retain every eligible message for every agent. A binding capacity must not silently truncate or rank messages, because either behavior would introduce an additional attention-selection mechanism that has not been specified.
 
-For a fixed network in which each originator can produce at most one message per round, a sufficient capacity is at least the largest number of eligible producers available to any one agent.
+For a fixed network in which each originator can produce at most one message per round, a sufficient capacity is at least the largest number of eligible producers available to any one agent. The repository configuration uses `agent_count - 1`, guaranteeing that capacity never binds for any valid non-self network.
 
 ## Timing and propagation
 
@@ -81,4 +81,4 @@ Message selection itself adds no fourth advantage. In particular, it does not pr
 
 The current selection mechanism excludes stochastic within-tie delivery, out-of-tie leader outreach, global random mixing, algorithmic recommendation, role- or stance-based ranking, binding attention capacity, message forwarding, and network adaptation. Any of these would require a separate substantive interpretation rather than being introduced as implementation detail.
 
-The fixed-network boundary and deterministic tied delivery are researcher-defined current decisions. The reciprocal encoding of regular social relationships is the current working representation and remains subject to review. The selection rule is a model operationalization inspired by interpersonal mediation in two-step-flow research; it is not claimed to be a uniquely specified rule from that literature.
+The fixed-network boundary, directed matched initialization, and deterministic tied delivery are researcher-approved current decisions. The selection rule is a model operationalization inspired by interpersonal mediation in two-step-flow research; it is not claimed to be a uniquely specified rule from that literature.

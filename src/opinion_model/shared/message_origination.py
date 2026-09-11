@@ -1,4 +1,4 @@
-"""Message-origination rule for the coupled null baseline."""
+"""Shared ordinary-agent message-origination rule."""
 
 from __future__ import annotations
 

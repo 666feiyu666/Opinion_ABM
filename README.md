@@ -2,9 +2,9 @@
 
 ## Opinion-Leader Branch
 
-`opleader` develops a two-step-flow-inspired agent-based model of interpersonal message diffusion after information about a focal issue has already entered the social system.
+`opleader` implements the opinion-leader-only scenario of OLIM 2.0 after information about a focal issue has entered the social system. It isolates opinion-leader mechanisms without platform recommendation or network adaptation.
 
-The current model contains opinion-leader and ordinary agents in a fixed social network. Every agent may originate a message, with leaders receiving an origination advantage. Originated messages are delivered deterministically through regular social ties, retain their source identity, and affect recipients only in the next synchronous state update.
+The current model contains opinion-leader and ordinary agents in a fixed directed information-access network. Every agent may originate a message, leaders receive an origination advantage, and leader messages receive a relative evidence multiplier. Originated messages travel only through configured ties, retain their source identity, and affect recipients only in the next synchronous update.
 
 Current design documents:
 
@@ -12,10 +12,3 @@ Current design documents:
 - [Posting Origination](docs/posting-origination.md)
 - [Message Selection](docs/message-selection.md)
 - [Message Aggregation](docs/message-aggregation.md)
-
-## Quick Check
-
-```powershell
-uv sync --locked
-uv run --locked python -m unittest discover -s tests -v
-```

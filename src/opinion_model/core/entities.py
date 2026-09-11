@@ -116,6 +116,8 @@ class Exposure:
         _nonnegative_integer(self.consumer_id, "consumer_id")
         if self.message.round_index != self.round_index:
             raise ValueError("Exposure and message rounds must agree.")
+        if self.consumer_id == self.message.producer_id:
+            raise ValueError("Self-exposure is outside the shared model boundary.")
 
 
 @dataclass(frozen=True)
@@ -214,6 +216,8 @@ class SelectionContext:
         _nonnegative_integer(self.capacity, "capacity")
         if not isinstance(self.exclude_self_messages, bool):
             raise ValueError("exclude_self_messages must be Boolean.")
+        if not self.exclude_self_messages:
+            raise ValueError("exclude_self_messages must be True.")
 
 
 @dataclass(frozen=True)

@@ -1,4 +1,4 @@
-"""Synchronous orchestration for the coupled null baseline."""
+"""Synchronous orchestration for the shared simulation framework."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from opinion_model.baseline.config import SimulationConfig
-from opinion_model.baseline.initialization import initialize_baseline
-from opinion_model.baseline.message_aggregation import aggregate_messages
-from opinion_model.baseline.message_origination import originate_message
-from opinion_model.baseline.message_selection import select_messages
-from opinion_model.baseline.network_update import propose_static_network
-from opinion_model.baseline.opinion_update import propose_opinion_update
-from opinion_model.baseline.randomness import RandomStreams
+from opinion_model.shared.config import SimulationConfig
+from opinion_model.shared.initialization import initialize_default
+from opinion_model.shared.message_aggregation import aggregate_messages
+from opinion_model.shared.message_origination import originate_message
+from opinion_model.shared.message_selection import select_messages
+from opinion_model.shared.network_update import propose_static_network
+from opinion_model.shared.opinion_update import propose_opinion_update
+from opinion_model.shared.randomness import RandomStreams
 from opinion_model.core import (
     AgentState,
     AggregationContext,
@@ -65,8 +65,8 @@ class SimulationResult:
         return self.rounds[-1].next_state if self.rounds else self.initial_state
 
 
-BASELINE_COMPONENTS = ModelComponents(
-    initializer=initialize_baseline,
+DEFAULT_COMPONENTS = ModelComponents(
+    initializer=initialize_default,
     message_origination=originate_message,
     message_selection=select_messages,
     message_aggregation=aggregate_messages,
@@ -179,7 +179,7 @@ def run_round(
 
 def run_simulation(
     config: SimulationConfig,
-    components: ModelComponents = BASELINE_COMPONENTS,
+    components: ModelComponents = DEFAULT_COMPONENTS,
     agent_order: tuple[int, ...] | None = None,
 ) -> SimulationResult:
     """Run the fixed synchronous schedule for the configured number of rounds."""

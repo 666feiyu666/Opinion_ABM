@@ -9,7 +9,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 import opinion_model
-from opinion_model import baseline, core, interfaces
+from opinion_model import core, interfaces, opleader, scenarios, shared
+from opinion_model.scenarios import opleader as opleader_scenario
 
 
 class PackageStructureTests(unittest.TestCase):
@@ -19,7 +20,10 @@ class PackageStructureTests(unittest.TestCase):
     def test_framework_layers_import(self):
         self.assertTrue(core.__doc__)
         self.assertTrue(interfaces.__doc__)
-        self.assertTrue(baseline.__doc__)
+        self.assertTrue(shared.__doc__)
+        self.assertTrue(opleader.__doc__)
+        self.assertTrue(scenarios.__doc__)
+        self.assertTrue(opleader_scenario.__doc__)
 
     def test_core_contracts_are_structural(self):
         class Formation:
