@@ -1,10 +1,10 @@
-"""Initialization rule for the coupled null baseline."""
+"""Default initialization rule for the shared simulation framework."""
 
 from __future__ import annotations
 
 import numpy as np
 
-from opinion_model.baseline.config import SimulationConfig
+from opinion_model.shared.config import SimulationConfig
 from opinion_model.core import AgentState, BetaBelief, NetworkState, WorldState
 
 
@@ -12,7 +12,7 @@ def belief_from_mean_concentration(mean: float, concentration: float) -> BetaBel
     return BetaBelief(mean * concentration, (1.0 - mean) * concentration)
 
 
-def initialize_baseline(
+def initialize_default(
     config: SimulationConfig,
     rng: np.random.Generator,
 ) -> WorldState:

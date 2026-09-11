@@ -6,7 +6,7 @@
 reach beyond existing social ties and exposure-driven adaptation of a directed
 following network.
 
-The current model contains ordinary agents with private Beta beliefs. Messages
+The executable scenario contains ordinary agents with private Beta beliefs. Messages
 from followed producers become available deterministically, while messages from
 untied producers become available through a Bernoulli platform process. All
 available messages compete equally for finite attention. Processed exposures
@@ -18,10 +18,3 @@ Current design documents:
 - [Platform-Mediated Opinion Dynamics: Rough Design](docs/platform-mediated-opinion-dynamics-rough-design.md)
 - [Platform Message Selection](docs/platform-message-selection.md)
 - [Platform Network Update](docs/platform-network-update.md)
-
-## Quick Check
-
-```powershell
-uv sync --locked
-uv run --locked python -m unittest discover -s tests -v
-```

@@ -219,8 +219,10 @@ source identity.
 
 The use of one Bernoulli parameter, deterministic existing-tie availability,
 uniform truncation, $K=10$, self-exclusion, and next-round network changes are
-current working decisions. The numerical value of $\rho$ remains open. The
-formation and dissolution of network ties will be specified separately.
+current working decisions. The mechanism itself does not prescribe a calibrated
+value of $\rho$. The exploratory platform scenario currently uses $\rho=0.04$
+to match the integrated baseline configuration. Formation and dissolution of
+network ties are specified separately.
 
 The current mechanism excludes personalization, stance-based ranking,
 opinion-similarity ranking, popularity or engagement signals, source-role

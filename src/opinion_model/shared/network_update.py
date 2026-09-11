@@ -1,4 +1,4 @@
-"""Static-network identity rule for the coupled null baseline."""
+"""Shared static-network identity rule."""
 
 from __future__ import annotations
 
