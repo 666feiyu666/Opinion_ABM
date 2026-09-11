@@ -1,4 +1,4 @@
-"""Homogeneous multi-message aggregation for the null baseline."""
+"""Shared homogeneous multi-message aggregation rule."""
 
 from __future__ import annotations
 

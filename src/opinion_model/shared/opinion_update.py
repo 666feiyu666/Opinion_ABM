@@ -1,4 +1,4 @@
-"""Beta-belief information effect for the coupled null baseline."""
+"""Shared Beta-belief opinion-update rule."""
 
 from __future__ import annotations
 

@@ -1,0 +1,32 @@
+# Matched exploratory null scenario. These are transparent working assumptions,
+# not calibrated estimates or a claim of exact senior-thesis replication.
+
+[experiment]
+id = "null"
+status = "exploratory"
+seeds = [
+  20260910,
+  20260911,
+  20260912,
+  20260913,
+  20260914,
+  20260915,
+  20260916,
+  20260917,
+  20260918,
+  20260919,
+]
+extremism_threshold = 0.8
+
+[simulation]
+agent_count = 500
+rounds = 50
+base_origination_probability = 0.10
+evidence_weight = 0.10
+consumption_capacity = 10
+exclude_self_messages = true
+
+[initialization]
+network_m = 3
+ordinary_mean_alpha = 2.0
+ordinary_concentration = 4.0

@@ -12,11 +12,11 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from opinion_model.baseline import (
-    BASELINE_COMPONENTS,
+from opinion_model.shared import (
+    DEFAULT_COMPONENTS,
     SimulationConfig,
     aggregate_messages,
-    initialize_baseline,
+    initialize_default,
     propose_opinion_update,
     propose_static_network,
     run_simulation,
@@ -27,6 +27,7 @@ from opinion_model.core import (
     AgentState,
     AggregationContext,
     BetaBelief,
+    Exposure,
     Message,
     MessageEvidence,
     NetworkUpdateContext,
@@ -35,7 +36,7 @@ from opinion_model.core import (
 )
 
 
-class BaselineRuleTests(unittest.TestCase):
+class SharedRuleTests(unittest.TestCase):
     def setUp(self):
         self.config = SimulationConfig()
 
@@ -44,6 +45,18 @@ class BaselineRuleTests(unittest.TestCase):
         self.assertEqual(self.config.rounds, 10)
         self.assertEqual(self.config.consumption_capacity, 10)
         self.assertTrue(self.config.exclude_self_messages)
+
+    def test_self_exposure_is_rejected_across_shared_inputs(self):
+        with self.assertRaises(ValueError):
+            SimulationConfig(exclude_self_messages=False)
+        with self.assertRaises(ValueError):
+            SelectionContext(1, 10, False)
+        with self.assertRaises(ValueError):
+            Exposure(
+                round_index=1,
+                consumer_id=0,
+                message=Message("r1:a0", 1, 0, 1),
+            )
 
     def test_hand_calculable_self_exclusion_and_update(self):
         messages = tuple(
@@ -55,7 +68,7 @@ class BaselineRuleTests(unittest.TestCase):
             )
             for producer_id in range(11)
         )
-        initial = initialize_baseline(
+        initial = initialize_default(
             self.config,
             np.random.default_rng(0),
         )
@@ -94,7 +107,7 @@ class BaselineRuleTests(unittest.TestCase):
         self.assertAlmostEqual(oppose_after.belief.b, 2.2)
 
     def test_static_network_rule_returns_same_network(self):
-        snapshot = initialize_baseline(self.config, np.random.default_rng(0))
+        snapshot = initialize_default(self.config, np.random.default_rng(0))
         events = RoundEvents((), (), {})
         proposed = propose_static_network(
             snapshot.network,
@@ -106,7 +119,7 @@ class BaselineRuleTests(unittest.TestCase):
         self.assertIs(proposed, snapshot.network)
 
 
-class BaselineSimulationTests(unittest.TestCase):
+class SharedSimulationTests(unittest.TestCase):
     def setUp(self):
         self.config = SimulationConfig()
         self.result = run_simulation(self.config)
@@ -125,14 +138,14 @@ class BaselineSimulationTests(unittest.TestCase):
         self.assertAlmostEqual(final_states["signed_mean"].mean(), 0.3896103896103896)
 
     def test_event_counts_and_null_exposure(self):
-        production = self.frames["production"]
+        origination = self.frames["origination"]
         messages = self.frames["messages"]
         exposures = self.frames["exposures"]
         aggregates = self.frames["aggregates"]
         states = self.frames["states"]
 
-        self.assertEqual(len(production), 110)
-        self.assertTrue(production["did_post"].all())
+        self.assertEqual(len(origination), 110)
+        self.assertTrue(origination["did_originate"].all())
         self.assertEqual(len(messages), 110)
         self.assertEqual(len(exposures), 1_100)
         self.assertEqual(len(aggregates), 110)
@@ -167,11 +180,15 @@ class BaselineSimulationTests(unittest.TestCase):
         self.assertTrue(np.allclose(states["a"], 2.0))
         self.assertTrue(np.allclose(states["b"], 2.0))
 
-    def test_zero_post_probability_records_opportunities_without_messages(self):
-        config = replace(self.config, rounds=2, post_probability=0.0)
+    def test_zero_origination_probability_records_silence(self):
+        config = replace(
+            self.config,
+            rounds=2,
+            base_origination_probability=0.0,
+        )
         frames = simulation_frames(run_simulation(config))
-        self.assertEqual(len(frames["production"]), 22)
-        self.assertFalse(frames["production"]["did_post"].any())
+        self.assertEqual(len(frames["origination"]), 22)
+        self.assertFalse(frames["origination"]["did_originate"].any())
         self.assertTrue(frames["messages"].empty)
         self.assertTrue(frames["exposures"].empty)
         self.assertIn("stance", frames["messages"].columns)
@@ -192,7 +209,7 @@ class BaselineSimulationTests(unittest.TestCase):
         )
         sort_keys = {
             "states": ["round", "agent_id"],
-            "production": ["round", "agent_id"],
+            "origination": ["round", "agent_id"],
             "messages": ["round", "producer_id"],
             "exposures": ["round", "consumer_id", "producer_id"],
             "aggregates": ["round", "consumer_id"],
@@ -209,7 +226,7 @@ class BaselineSimulationTests(unittest.TestCase):
             return MessageEvidence(0, 0, 0.0, 0.0)
 
         components = replace(
-            BASELINE_COMPONENTS,
+            DEFAULT_COMPONENTS,
             message_aggregation=ignore_messages,
         )
         config = replace(self.config, rounds=2)

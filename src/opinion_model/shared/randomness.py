@@ -1,4 +1,4 @@
-"""Independent, reproducible random streams for baseline mechanisms."""
+"""Independent, reproducible random streams for shared mechanisms."""
 
 from __future__ import annotations
 
@@ -31,8 +31,8 @@ class RandomStreams:
     def initialization(self) -> np.random.Generator:
         return self._generator("initialization")
 
-    def posting(self, round_index: int, agent_id: int) -> np.random.Generator:
-        return self._generator("posting", round_index, agent_id)
+    def origination(self, round_index: int, agent_id: int) -> np.random.Generator:
+        return self._generator("origination", round_index, agent_id)
 
     def stance(self, round_index: int, agent_id: int) -> np.random.Generator:
         """Preserve the parent notebook's established stance stream."""

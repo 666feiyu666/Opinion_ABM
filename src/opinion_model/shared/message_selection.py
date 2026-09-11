@@ -1,4 +1,4 @@
-"""Neutral message-selection rule for the coupled null baseline."""
+"""Shared neutral message-selection rule."""
 
 from __future__ import annotations
 

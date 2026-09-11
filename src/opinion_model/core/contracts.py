@@ -1,8 +1,8 @@
 """Behavioral contracts owned by the generalized model.
 
 The legacy generic contracts remain available. The explicit callable contracts
-separate production opportunities, message exposure, evidence aggregation,
-opinion proposals, and network proposals for the coupled baseline.
+separate message origination, exposure, evidence aggregation,
+opinion proposals, and network proposals for the shared scheduler.
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from opinion_model.core.entities import (
     MessageEvidence,
     NetworkState,
     NetworkUpdateContext,
-    ProductionContext,
-    ProductionOutcome,
+    OriginationContext,
+    OriginationOutcome,
     RoundEvents,
     SelectionContext,
     WorldState,
@@ -58,17 +58,17 @@ class InformationEffect(Protocol[AgentStateT, InformationT]):
 
 
 @runtime_checkable
-class MessageProduction(Protocol):
-    """Give one agent one opportunity to produce zero or one message."""
+class MessageOrigination(Protocol):
+    """Draw whether one agent originates zero or one message."""
 
     def __call__(
         self,
         agent_id: int,
         state: AgentState,
-        context: ProductionContext,
-        posting_rng: np.random.Generator,
+        context: OriginationContext,
+        origination_rng: np.random.Generator,
         stance_rng: np.random.Generator,
-    ) -> ProductionOutcome: ...
+    ) -> OriginationOutcome: ...
 
 
 @runtime_checkable
