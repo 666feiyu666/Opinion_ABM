@@ -192,7 +192,7 @@ class TieBoundMessageSelectionTests(unittest.TestCase):
         )
         context = SelectionContext(1, 1, True)
 
-        with self.assertRaisesRegex(ValueError, "attention competition is omitted"):
+        with self.assertRaisesRegex(ValueError, "attention competition is outside"):
             self.select(self.LEADER_0, messages, context=context)
 
     def test_unknown_consumer_is_rejected(self) -> None:

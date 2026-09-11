@@ -1,0 +1,48 @@
+# Matched exploratory opinion-leader-only scenario. These are transparent
+# working assumptions, not calibrated estimates or an exact replication claim.
+
+[experiment]
+id = "opleader"
+status = "exploratory"
+seeds = [
+  20260910,
+  20260911,
+  20260912,
+  20260913,
+  20260914,
+  20260915,
+  20260916,
+  20260917,
+  20260918,
+  20260919,
+]
+orientations = [
+  "positive",
+  "negative",
+  "balanced_positive",
+  "balanced_negative",
+]
+extremism_threshold = 0.8
+
+[simulation]
+agent_count = 500
+rounds = 50
+base_origination_probability = 0.10
+interest_decay = 0.02
+evidence_weight = 0.10
+# Attention competition is outside the opleader boundary, so capacity must
+# retain every possible non-self source.
+consumption_capacity = 499
+exclude_self_messages = true
+
+[initialization]
+network_m = 3
+leader_share = 0.03
+ordinary_mean_alpha = 2.0
+ordinary_concentration = 4.0
+leader_positive_a = 18.0
+leader_positive_b = 2.0
+
+[opinion_leader]
+leader_log_odds_advantage = 1.0986122886681098
+leader_evidence_multiplier = 1.5

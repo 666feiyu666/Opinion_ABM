@@ -33,13 +33,13 @@ class OpinionLeaderIntegrationTests(unittest.TestCase):
             rounds=3,
             seed=20260909,
             base_origination_probability=0.2,
+            interest_decay=0.03,
             consumption_capacity=10,
         )
         self.components = replace(
             DEFAULT_COMPONENTS,
             message_origination=OpinionLeaderMessageOrigination(
                 leader_ids=self.leader_ids,
-                interest_decay=0.03,
                 leader_log_odds_advantage=log(4.0),
             ),
             message_selection=select_opleader_messages,
@@ -101,12 +101,15 @@ class OpinionLeaderIntegrationTests(unittest.TestCase):
             pd.testing.assert_frame_equal(expected, observed)
 
     def test_neutral_parameters_reproduce_the_shared_defaults(self) -> None:
-        config = replace(self.config, base_origination_probability=1.0)
+        config = replace(
+            self.config,
+            base_origination_probability=1.0,
+            interest_decay=0.0,
+        )
         neutral_components = replace(
             DEFAULT_COMPONENTS,
             message_origination=OpinionLeaderMessageOrigination(
                 leader_ids=self.leader_ids,
-                interest_decay=0.0,
                 leader_log_odds_advantage=0.0,
             ),
             message_selection=select_opleader_messages,

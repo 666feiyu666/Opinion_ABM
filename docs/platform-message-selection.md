@@ -11,7 +11,7 @@ round become available to each agent and, subject to a finite processing
 capacity, which of those messages become exposures. The mechanism extends
 communication beyond existing network ties while retaining the same ordinary
 message-origination and homogeneous aggregation mechanisms as the shared
-framework.
+baseline.
 
 The current version represents the platform through uniform out-of-network
 reach. It does not rank messages by stance, source role, popularity, predicted
@@ -127,8 +127,8 @@ $$
 K=10
 $$
 
-messages per round. This capacity has the same meaning and value as in the
-shared null case. The final exposure set is
+messages per round. This finite capacity is part of the platform package;
+the two no-platform scenarios use nonbinding capacity. The final exposure set is
 
 $$
 \mathcal{E}_i^t
@@ -205,22 +205,25 @@ $t$ never reads or modifies a partially updated network.
 The Bernoulli availability draws and uniform capacity sampling are separate
 stochastic operations. Implementations should use stable message ordering and
 reproducible random streams so that results do not depend on dictionary or agent
-iteration order. Matched scenario runs should retain the same initialization,
-message-origination streams, and shared capacity wherever their meanings remain
-the same.
+iteration order. Matched scenario runs retain the same initialization and
+message-origination streams. `platform` and `baseline` also retain the same
+finite capacity, while `null` and `opleader` use nonbinding capacity because
+attention competition is outside their boundary.
 
 ## Interpretation and current status
 
 This mechanism represents **uniform platform-mediated reach**, not a realistic
 or optimized recommendation algorithm. It adds one platform channel: messages
-may become available beyond existing ties. The common capacity rule then models
+may become available beyond existing ties. The platform capacity rule then models
 finite attention without introducing a preference over message content or
 source identity.
 
 The use of one Bernoulli parameter, deterministic existing-tie availability,
 uniform truncation, $K=10$, self-exclusion, and next-round network changes are
-current working decisions. The numerical value of $\rho$ remains open. The
-formation and dissolution of network ties will be specified separately.
+current working decisions. The mechanism itself does not prescribe a calibrated
+value of $\rho$. The exploratory platform scenario currently uses $\rho=0.04$
+to match the integrated baseline configuration. Formation and dissolution of
+network ties are specified separately.
 
 The current mechanism excludes personalization, stance-based ranking,
 opinion-similarity ranking, popularity or engagement signals, source-role

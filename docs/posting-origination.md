@@ -22,7 +22,7 @@ $$
 \right],
 $$
 
-where $\pi_0\in[0,1]$ is an ordinary agent's origination probability in round 1, $\lambda\geq0$ is the common rate of interest decay, $\beta_L\geq0$ is the opinion-leader advantage, and $\sigma(x)=1/(1+e^{-x})$. For interior values, leader status therefore multiplies the odds of origination by $e^{\beta_L}$ while both roles experience the same temporal decline. The endpoints use the corresponding limiting cases: $\pi_0=0$ remains zero and $\pi_0=1$ remains one for finite decay and leader-advantage parameters.
+where $\pi_0\in(0,1)$ is an ordinary agent's origination probability in round 1, $\lambda\geq0$ is the common rate of interest decay, $\beta_L\geq0$ is the opinion-leader advantage, and $\sigma(x)=1/(1+e^{-x})$. Leader status therefore multiplies the odds of origination by $e^{\beta_L}$ while both roles experience the same temporal decline. The comparison design assigns $\lambda$ through the shared simulation configuration, so the same decay applies in `null`, `opleader`, `platform`, and `baseline`.
 
 The origination event is then sampled as:
 

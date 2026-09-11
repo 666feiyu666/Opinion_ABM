@@ -101,6 +101,7 @@ def run_round(
     origination_context = OriginationContext(
         round_index=round_index,
         base_origination_probability=config.base_origination_probability,
+        interest_decay=config.interest_decay,
     )
 
     outcomes = tuple(

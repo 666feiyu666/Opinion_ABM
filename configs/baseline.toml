@@ -28,6 +28,7 @@ extremism_threshold = 0.8
 agent_count = 500
 rounds = 50
 base_origination_probability = 0.10
+interest_decay = 0.02
 evidence_weight = 0.10
 consumption_capacity = 10
 exclude_self_messages = true
@@ -41,7 +42,6 @@ leader_positive_a = 18.0
 leader_positive_b = 2.0
 
 [opinion_leader]
-interest_decay = 0.02
 leader_log_odds_advantage = 1.0986122886681098
 leader_evidence_multiplier = 1.5
 

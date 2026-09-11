@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import isfinite, log, log1p
+from math import isfinite
 
 import numpy as np
-from scipy.special import expit
 
 from opinion_model.shared.message_origination import (
     beta_tail_support_probability,
+    temporal_origination_probability,
 )
 from opinion_model.core import (
     AgentState,
@@ -33,37 +33,19 @@ def origination_probability(
     ordinary agent. Interest decay and leader advantage act additively on the
     log-odds scale.
     """
-    base_probability = float(base_origination_probability)
-    decay = float(interest_decay)
-    leader_advantage = float(leader_log_odds_advantage)
-
-    if not isfinite(base_probability) or not 0.0 <= base_probability <= 1.0:
-        raise ValueError("base_origination_probability must lie in [0, 1].")
-    if (
-        isinstance(round_index, bool)
-        or not isinstance(round_index, int)
-        or round_index <= 0
-    ):
-        raise ValueError("round_index must be a positive integer.")
     if not isinstance(is_leader, bool):
         raise ValueError("is_leader must be Boolean.")
-    if not isfinite(decay) or decay < 0.0:
-        raise ValueError("interest_decay must be finite and non-negative.")
+    leader_advantage = float(leader_log_odds_advantage)
     if not isfinite(leader_advantage) or leader_advantage < 0.0:
         raise ValueError(
             "leader_log_odds_advantage must be finite and non-negative."
         )
-
-    if base_probability in (0.0, 1.0):
-        return base_probability
-
-    base_log_odds = log(base_probability) - log1p(-base_probability)
-    linear_predictor = (
-        base_log_odds
-        - decay * (round_index - 1)
-        + leader_advantage * int(is_leader)
+    return temporal_origination_probability(
+        base_origination_probability=base_origination_probability,
+        round_index=round_index,
+        interest_decay=interest_decay,
+        log_odds_shift=leader_advantage * int(is_leader),
     )
-    return float(expit(linear_predictor))
 
 
 @dataclass(frozen=True)
@@ -76,7 +58,6 @@ class OpinionLeaderMessageOrigination:
     """
 
     leader_ids: frozenset[int]
-    interest_decay: float
     leader_log_odds_advantage: float
 
     def __post_init__(self) -> None:
@@ -88,8 +69,6 @@ class OpinionLeaderMessageOrigination:
                 or leader_id < 0
             ):
                 raise ValueError("Leader IDs must be non-negative integers.")
-        if not isfinite(self.interest_decay) or self.interest_decay < 0.0:
-            raise ValueError("interest_decay must be finite and non-negative.")
         if (
             not isfinite(self.leader_log_odds_advantage)
             or self.leader_log_odds_advantage < 0.0
@@ -112,7 +91,7 @@ class OpinionLeaderMessageOrigination:
             base_origination_probability=context.base_origination_probability,
             round_index=context.round_index,
             is_leader=agent_id in self.leader_ids,
-            interest_decay=self.interest_decay,
+            interest_decay=context.interest_decay,
             leader_log_odds_advantage=self.leader_log_odds_advantage,
         )
         support_probability = beta_tail_support_probability(state)

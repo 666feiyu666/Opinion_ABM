@@ -9,6 +9,7 @@ from opinion_model.shared.message_aggregation import aggregate_messages
 from opinion_model.shared.message_origination import (
     beta_tail_support_probability,
     originate_message,
+    temporal_origination_probability,
 )
 from opinion_model.shared.message_selection import select_messages
 from opinion_model.shared.network_update import propose_static_network
@@ -36,6 +37,7 @@ __all__ = [
     "initialize_default",
     "beta_tail_support_probability",
     "originate_message",
+    "temporal_origination_probability",
     "propose_opinion_update",
     "propose_static_network",
     "run_round",

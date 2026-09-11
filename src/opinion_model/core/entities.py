@@ -196,6 +196,7 @@ class WorldState:
 class OriginationContext:
     round_index: int
     base_origination_probability: float
+    interest_decay: float = 0.0
 
     def __post_init__(self) -> None:
         _nonnegative_integer(self.round_index, "round_index")
@@ -203,6 +204,8 @@ class OriginationContext:
             self.base_origination_probability,
             "base_origination_probability",
         )
+        if not isfinite(self.interest_decay) or self.interest_decay < 0.0:
+            raise ValueError("interest_decay must be finite and non-negative.")
 
 
 @dataclass(frozen=True)

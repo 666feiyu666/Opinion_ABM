@@ -146,6 +146,23 @@ class NetworkDecisionOpportunity:
 
 
 @dataclass(frozen=True)
+class NetworkDecision:
+    """One sampled platform network decision."""
+
+    opportunity: NetworkDecisionOpportunity
+    random_draw: float
+    accepted: bool
+
+
+@dataclass(frozen=True)
+class PlatformNetworkUpdateTrace:
+    """Auditable decisions and the resulting synchronously proposed network."""
+
+    decisions: tuple[NetworkDecision, ...]
+    next_network: NetworkState
+
+
+@dataclass(frozen=True)
 class PlatformNetworkUpdate:
     """Propose independent exposure-based network changes synchronously."""
 
@@ -325,23 +342,53 @@ class PlatformNetworkUpdate:
         rng: np.random.Generator,
     ) -> NetworkState:
         """Sample every opportunity, then commit accepted proposals together."""
+        return self.propose_with_trace(
+            network,
+            snapshot,
+            events,
+            context,
+            rng,
+        ).next_network
+
+    def propose_with_trace(
+        self,
+        network: NetworkState,
+        snapshot: WorldState,
+        events: RoundEvents,
+        context: NetworkUpdateContext,
+        rng: np.random.Generator,
+    ) -> PlatformNetworkUpdateTrace:
+        """Sample all opportunities and retain their exact stochastic trace."""
         opportunities = self.opportunities(network, snapshot, events, context)
         proposed = {
             consumer_id: set(producers)
             for consumer_id, producers in network.neighbors_by_agent.items()
         }
+        decisions = []
 
         for opportunity in opportunities:
-            if rng.random() >= opportunity.probability:
+            random_draw = float(rng.random())
+            accepted = random_draw < opportunity.probability
+            decisions.append(
+                NetworkDecision(
+                    opportunity=opportunity,
+                    random_draw=random_draw,
+                    accepted=accepted,
+                )
+            )
+            if not accepted:
                 continue
             if opportunity.action == "tie":
                 proposed[opportunity.consumer_id].add(opportunity.producer_id)
             else:
                 proposed[opportunity.consumer_id].discard(opportunity.producer_id)
 
-        return NetworkState(
-            {
-                consumer_id: tuple(sorted(producers))
-                for consumer_id, producers in proposed.items()
-            }
+        return PlatformNetworkUpdateTrace(
+            decisions=tuple(decisions),
+            next_network=NetworkState(
+                {
+                    consumer_id: tuple(sorted(producers))
+                    for consumer_id, producers in proposed.items()
+                }
+            ),
         )

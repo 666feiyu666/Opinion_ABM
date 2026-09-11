@@ -1,0 +1,9 @@
+# Canonical four-scenario comparison. Paths are resolved relative to this file.
+
+[comparison]
+id = "olim2-full-comparison"
+status = "exploratory"
+null = "null.toml"
+opleader = "opleader.toml"
+platform = "platform.toml"
+baseline = "baseline.toml"

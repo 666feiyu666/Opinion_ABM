@@ -16,6 +16,7 @@ class SimulationConfig:
     initial_mean: float = 0.5
     initial_concentration: float = 4.0
     base_origination_probability: float = 1.0
+    interest_decay: float = 0.0
     evidence_weight: float = 0.1
     consumption_capacity: int = 10
     exclude_self_messages: bool = True
@@ -36,6 +37,8 @@ class SimulationConfig:
             or not 0.0 <= self.base_origination_probability <= 1.0
         ):
             raise ValueError("base_origination_probability must lie in [0, 1].")
+        if not isfinite(self.interest_decay) or self.interest_decay < 0.0:
+            raise ValueError("interest_decay must be finite and non-negative.")
         if not isfinite(self.evidence_weight) or self.evidence_weight < 0.0:
             raise ValueError("evidence_weight must be finite and non-negative.")
         if not isinstance(self.exclude_self_messages, bool):

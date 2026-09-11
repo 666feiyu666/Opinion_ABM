@@ -1,10 +1,10 @@
 # Mass-Communication Opinion-Leader Model: Rough Design
 
-> **Status:** Revised rough design
+> **Status:** Implemented exploratory connected framework
 >
 > **Case:** `opleader`
 >
-> **Scope:** Two-step-flow-inspired opinion leadership after information about a focal issue has entered the social system, using a fixed interpersonal network
+> **Scope:** Two-step-flow-inspired opinion leadership after information about a focal issue has entered the social system, using a fixed directed information-access network
 
 ## Purpose and model boundary
 
@@ -34,7 +34,7 @@ These representations adapt selected ideas from two-step-flow theory to the curr
 - **Opinion leaders:** adaptive social agents whose leader status can modify particular mechanisms, including origination probability, initialized structural reach, and message weight.
 - **Ordinary agents:** adaptive social agents governed by the same basic process but without the corresponding leader advantages.
 - **Messages:** observable expressions produced by agents. Each message retains its producer identity and stance so that exposure and influence can depend on source role.
-- **Social network:** fixed reciprocal ties representing regular interpersonal relationships through which agents can communicate about the focal topic.
+- **Social network:** fixed directed ties recording which producers are available to each consumer for communication about the focal topic.
 
 `leader` and `ordinary` are agent roles. `originator` and `consumer` describe communication roles within a round:
 
@@ -53,7 +53,7 @@ Keeping the origination draw separate from conditional stance formation prevents
 
 ## Diffusion, exposure, and influence
 
-Produced messages diffuse through the fixed social network. Every message originated in the current round is delivered deterministically to all of the originator's regular social contacts. Messages from both leaders and ordinary agents obey the same tie-bound rule; no message is delivered to an untied agent. Selection is stance-blind and role-blind.
+Produced messages diffuse through the fixed directed social network. Every message originated in the current round is delivered deterministically to consumers for whom that originator is an eligible producer. Messages from both leaders and ordinary agents obey the same tie-bound rule; no message is delivered to an untied agent. Selection is stance-blind and role-blind.
 
 Opinion leaders can have greater expected reach through a more connected initialized network position and through their higher probability of originating messages. Selection adds no separate leader-conditioned delivery advantage. Attention competition is omitted, so configured capacity must be large enough to retain all messages eligible through social ties. For the bounded mechanism definition, see [Message Selection](message-selection.md).
 
@@ -85,8 +85,8 @@ An updated belief can affect message origination only from the next round onward
 
 ## Current boundaries and open decisions
 
-The current case includes ordinary-agent and leader message origination, deterministic tie-bound diffusion through a fixed social network, source-dependent evidence aggregation, and opinion updating. It excludes a separate message-production decision, stochastic or out-of-tie delivery, attention competition, message forwarding, network adaptation, algorithmic ranking, out-of-network recommendation, and engagement-driven platform feedback.
+The current case includes ordinary-agent and leader message origination, deterministic tie-bound diffusion through a fixed directed network, source-dependent evidence aggregation, and opinion updating. It excludes a separate message-production decision, stochastic or out-of-tie delivery, attention competition, message forwarding, network adaptation, algorithmic ranking, out-of-network recommendation, and engagement-driven platform feedback.
 
-The current basic decisions are the decaying logistic origination probability, the leader log-odds advantage, the Beta-tail stance mapping documented in [Posting Origination](posting-origination.md), the deterministic tied-delivery rule documented in [Message Selection](message-selection.md), and the source-only relative weighting rule documented in [Message Aggregation](message-aggregation.md). Open decisions include parameter justification or calibration, initialization of the fixed network and leader positions, the meaning and magnitude of leader evidence weight, and whether leader access to prior information requires a distinct initialization mechanism.
+The exploratory implementation uses the canonical matched directed Barabasi-Albert realization and ordinary-belief draws shared by all four scenarios. Leaders are the top three percent of agents by producer in-degree, and `opleader` and `baseline` share the same leader selection and orientation assignment. The current basic decisions are the shared decaying logistic origination probability, the leader log-odds advantage, the Beta-tail stance mapping documented in [Posting Origination](posting-origination.md), the deterministic tied-delivery rule documented in [Message Selection](message-selection.md), and the source-only relative weighting rule documented in [Message Aggregation](message-aggregation.md). Parameter values remain transparent working assumptions rather than calibrated estimates.
 
 Leader initialization, origination advantage, structural reach, and evidence weight should remain separable so that their individual and combined effects can later be examined.

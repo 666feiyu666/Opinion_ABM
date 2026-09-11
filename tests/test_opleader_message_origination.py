@@ -192,7 +192,6 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.rule = OpinionLeaderMessageOrigination(
             leader_ids=frozenset({1}),
-            interest_decay=0.03,
             leader_log_odds_advantage=log(4.0),
         )
         self.state = AgentState(BetaBelief(3.0, 2.0))
@@ -206,7 +205,7 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         outcome = self.rule(
             0,
             self.state,
-            OriginationContext(1, 0.2),
+            OriginationContext(1, 0.2, interest_decay=0.03),
             origination_rng,
             stance_rng,
         )
@@ -221,14 +220,14 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         ordinary = self.rule(
             0,
             self.state,
-            OriginationContext(1, 0.2),
+            OriginationContext(1, 0.2, interest_decay=0.03),
             CountingRng(0.99),
             CountingRng(),
         )
         leader = self.rule(
             1,
             self.state,
-            OriginationContext(1, 0.2),
+            OriginationContext(1, 0.2, interest_decay=0.03),
             CountingRng(0.99),
             CountingRng(),
         )
@@ -241,7 +240,7 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         outcome = self.rule(
             0,
             self.state,
-            OriginationContext(1, 0.2),
+            OriginationContext(1, 0.2, interest_decay=0.03),
             origination_rng,
             stance_rng,
         )
@@ -255,7 +254,7 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         outcome = self.rule(
             1,
             self.state,
-            OriginationContext(3, 0.2),
+            OriginationContext(3, 0.2, interest_decay=0.03),
             CountingRng(0.0),
             CountingRng(0.0),
         )
@@ -273,7 +272,7 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         outcome = self.rule(
             1,
             self.state,
-            OriginationContext(2, 0.2),
+            OriginationContext(2, 0.2, interest_decay=0.03),
             CountingRng(0.0),
             CountingRng(0.999999),
         )
@@ -284,7 +283,7 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         self.rule(
             1,
             self.state,
-            OriginationContext(1, 0.2),
+            OriginationContext(1, 0.2, interest_decay=0.03),
             CountingRng(0.0),
             CountingRng(0.0),
         )
@@ -304,7 +303,11 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
                     self.rule(
                         1,
                         self.state,
-                        OriginationContext(round_index, 0.2),
+                        OriginationContext(
+                            round_index,
+                            0.2,
+                            interest_decay=0.03,
+                        ),
                         origination_rng,
                         stance_rng,
                     ),
@@ -317,14 +320,11 @@ class OpinionLeaderMessageOriginationTests(unittest.TestCase):
         invalid_arguments = (
             {"leader_ids": frozenset({True})},
             {"leader_ids": frozenset({-1})},
-            {"interest_decay": -0.01},
-            {"interest_decay": float("inf")},
             {"leader_log_odds_advantage": -0.01},
             {"leader_log_odds_advantage": float("inf")},
         )
         defaults = {
             "leader_ids": frozenset({1}),
-            "interest_decay": 0.0,
             "leader_log_odds_advantage": 0.0,
         }
         for change in invalid_arguments:

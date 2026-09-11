@@ -1,6 +1,6 @@
 # Platform-Mediated Opinion Dynamics: Rough Design
 
-> **Status:** Implemented initial design
+> **Status:** Implemented connected platform-only scenario
 >
 > **Case:** `platform`
 >
@@ -35,14 +35,21 @@ agents may originate messages from those beliefs.
 
 | Process | Current owner | Role in the `platform` case |
 |---|---|---|
-| Message origination | Shared framework | Ordinary agents may originate one message whose stance is sampled from their Beta belief. |
+| Message origination | Shared mechanisms | Ordinary agents may originate one message whose stance is sampled from their Beta belief. |
 | Message selection | `platform` | Existing-tie messages become available deterministically; out-of-network messages may become available through a Bernoulli draw; finite capacity determines processed exposures. |
-| Message aggregation and opinion update | Shared framework | Every processed message contributes the same base evidence weight to the recipient's Beta update. |
+| Message aggregation and opinion update | Shared mechanisms | Every processed message contributes the same base evidence weight to the recipient's Beta update. |
 | Network update | `platform` | Processed messages create opportunities to form or dissolve directed following ties according to degree and belief--message alignment. |
 
 Platform mechanisms do not silently change shared message semantics or the
-meaning of the Beta belief. Exact matched parameterization across the four OLIM
-2.0 scenarios belongs to later scenario integration and experiment design.
+meaning of the Beta belief. The full comparison loader now enforces matched
+shared parameters and identical platform parameters in `platform` and
+`baseline`; their numerical values remain exploratory rather than calibrated.
+
+The executable platform-only scenario is assembled in
+`src/opinion_model/scenarios/platform/` and configured by
+`configs/platform.toml`. Its numerical values are exploratory settings matched
+to the integrated baseline; they are not calibrated estimates. The scenario
+contains no opinion-leader roles or mechanisms.
 
 ## Entities, states, and interaction roles
 
@@ -151,7 +158,7 @@ Each round follows one synchronous sequence:
 3. For every potential consumer, make existing-tie messages available and draw
    out-of-network candidate availability with probability $\rho$.
 4. Combine both candidate sources and retain at most ten messages through the
-   common uniform capacity rule.
+   platform's uniform finite-attention rule.
 5. Aggregate each consumer's retained exposures and propose its next Beta
    belief.
 6. Use the same retained exposures, start-of-round belief, following degree,
@@ -199,12 +206,14 @@ equal attention competition between source channels, $K=10$, Beta-tail
 alignment, soft degree regulation, producer-level network decisions, possible
 isolation, and synchronous next-round commitment.
 
-Open decisions include the numerical value of $\rho$; the parameter values for
-tie formation and dissolution; and the initialization and scale of the directed
-network. Degree normalization removes a mechanical dependence on population
-size, but whether substantive parameter values should differ across population
-sizes remains an empirical question. These questions remain open rather than
-being filled by the historical OLIM implementation automatically.
+Calibration or empirical justification of $\rho$, the formation and dissolution
+parameters, and the initialization and scale of the directed network remain
+open. The executable exploratory scenario chooses transparent working values in
+`configs/platform.toml` solely to match the integrated baseline. Degree
+normalization removes a mechanical dependence on population size, but whether
+substantive parameter values should differ across population sizes remains an
+empirical question. These questions are not filled by the historical OLIM
+implementation automatically.
 
 The current case excludes opinion leaders, source-dependent evidence weight,
 personalization, stance or similarity ranking, popularity and engagement

@@ -81,7 +81,6 @@ class BaselineInitializationConfig:
 class OpinionLeaderMechanismConfig:
     """Parameters of the two opinion-leader advantages used by baseline."""
 
-    interest_decay: float
     leader_log_odds_advantage: float
     leader_evidence_multiplier: float
 
@@ -95,7 +94,6 @@ class OpinionLeaderMechanismConfig:
     ) -> OpinionLeaderMessageOrigination:
         return OpinionLeaderMessageOrigination(
             leader_ids=leader_ids,
-            interest_decay=self.interest_decay,
             leader_log_odds_advantage=self.leader_log_odds_advantage,
         )
 
@@ -240,6 +238,7 @@ def load_baseline_experiment_config(
             base_origination_probability=float(
                 simulation["base_origination_probability"]
             ),
+            interest_decay=float(simulation["interest_decay"]),
             evidence_weight=float(simulation["evidence_weight"]),
             consumption_capacity=int(simulation["consumption_capacity"]),
             exclude_self_messages=bool(simulation["exclude_self_messages"]),
@@ -255,7 +254,6 @@ def load_baseline_experiment_config(
             leader_positive_b=float(initialization["leader_positive_b"]),
         ),
         opinion_leader=OpinionLeaderMechanismConfig(
-            interest_decay=float(opinion_leader["interest_decay"]),
             leader_log_odds_advantage=float(
                 opinion_leader["leader_log_odds_advantage"]
             ),

@@ -300,8 +300,9 @@ selection creates the encounters through which the network can change.
 The exposure-based candidate sets, normalized-degree logistic probability
 forms, Beta-tail alignment, soft isolation tendency, producer-level decisions,
 $K=10$ opportunity bound, and synchronous commitment are current working
-decisions. The numerical values of the formation and dissolution parameters
-remain unresolved.
+decisions. The mechanism itself does not prescribe calibrated formation and
+dissolution parameters. The exploratory platform scenario uses the working
+values in `configs/platform.toml` to match the integrated baseline configuration.
 
 The current mechanism excludes a fixed target degree, forced one-for-one
 rewiring, guaranteed connectivity, triadic closure, reciprocity preference,

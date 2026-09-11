@@ -41,6 +41,7 @@ class BaselineScenarioStructureTests(unittest.TestCase):
                 rounds=1,
                 seed=20260910,
                 base_origination_probability=1.0,
+                interest_decay=0.03,
                 consumption_capacity=3,
             ),
             initialization=BaselineInitializationConfig(
@@ -52,7 +53,6 @@ class BaselineScenarioStructureTests(unittest.TestCase):
                 leader_positive_b=2.0,
             ),
             opinion_leader=OpinionLeaderMechanismConfig(
-                interest_decay=0.03,
                 leader_log_odds_advantage=log(4.0),
                 leader_evidence_multiplier=4.0,
             ),
