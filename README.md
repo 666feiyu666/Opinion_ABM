@@ -1,7 +1,6 @@
 # Opinion Model
 
-From Two-Step Flow to Algorithmically Mediated Influence: How Online Platforms
-Transform Opinion Leadership in Opinion Dynamics.
+From Two-Step Flow to Platform-Mediated Influence: An Agent-Based Model of Online Opinion Leadership
 
 This repository provides the shared implementation for comparing three
 information environments:
