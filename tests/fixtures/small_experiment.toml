@@ -1,0 +1,14 @@
+# Small deterministic fixture for experiment integration tests; not research evidence.
+[experiment]
+status = "pilot"
+comparison = "../../configs/comparison.toml"
+populations = [30]
+leader_shares = [0.10]
+seeds = [7101, 7102, 7103]
+analysis_round = 5
+extended_rounds = 10
+reference_population = 30
+reference_share = 0.10
+main_reach = 0.04
+reach_levels = [0.0, 0.04, 0.08]
+topologies = ["ba"]

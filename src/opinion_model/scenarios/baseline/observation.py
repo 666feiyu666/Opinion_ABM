@@ -8,6 +8,8 @@ import pandas as pd
 from opinion_model.core import WorldState
 from opinion_model.scenarios.baseline.config import BaselineOrientation
 from opinion_model.shared import SimulationResult
+from opinion_model.scenarios.baseline.config import BaselineConfig
+from opinion_model.scenarios.platform.observation import platform_round_metrics
 
 
 def _content_balance(support: int, oppose: int) -> float:
@@ -74,6 +76,7 @@ def _state_measures(
 def baseline_round_metrics(
     result: SimulationResult,
     *,
+    config: BaselineConfig,
     seed: int,
     orientation: BaselineOrientation,
     leader_ids: frozenset[int],
@@ -127,7 +130,16 @@ def baseline_round_metrics(
             )
         )
         rows.append(row)
-    return pd.DataFrame(rows)
+    frame = pd.DataFrame(rows)
+    # Replay the same read-only selection/network observers used by platform.
+    # Each replay checks its events against the recorded simulation.
+    diagnostics = platform_round_metrics(
+        result, config, extremism_threshold=extremism_threshold
+    )
+    for column in diagnostics.columns:
+        if column not in frame and column != "condition":
+            frame[column] = diagnostics[column]
+    return frame
 
 
 __all__ = ["baseline_round_metrics"]

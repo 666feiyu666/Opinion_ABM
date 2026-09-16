@@ -1,0 +1,14 @@
+# Proposed retained-run settings. Planning is allowed; execution awaits freeze.
+[experiment]
+status = "provisional"
+comparison = "../comparison.toml"
+populations = [500, 750, 1000]
+leader_shares = [0.01, 0.03, 0.05]
+seeds = [20260920, 20260921, 20260922, 20260923, 20260924, 20260925, 20260926, 20260927, 20260928, 20260929]
+analysis_round = 50
+extended_rounds = 100
+reference_population = 500
+reference_share = 0.03
+main_reach = 0.04
+reach_levels = [0.0, 0.04, 0.08]
+topologies = ["ba", "er", "ws", "sbm"]

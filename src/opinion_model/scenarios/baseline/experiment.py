@@ -51,6 +51,7 @@ def run_baseline_condition(
     result = run_simulation(config.simulation, components)
     metrics = baseline_round_metrics(
         result,
+        config=config,
         seed=config.simulation.seed,
         orientation=orientation,
         leader_ids=initialization.leader_ids,
