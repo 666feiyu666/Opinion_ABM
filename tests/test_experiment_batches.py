@@ -207,7 +207,7 @@ class PersistenceTests(unittest.TestCase):
                 execute_batch(batch, design, plan, "main", template, resume=True)
 
     def test_formal_provisional_and_missing_topology_sources_fail_before_running(self):
-        design = load_design(ROOT / "configs/main_experiment/main_grid.toml")
+        design = replace(load_design(ROOT / "configs/main_experiment/main_grid.toml"), status="provisional")
         plan = build_plan(design)
         template = validate_plan(design, plan)
         with tempfile.TemporaryDirectory() as temp:
