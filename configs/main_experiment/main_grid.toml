@@ -1,6 +1,6 @@
 # Proposed retained-run settings. Planning is allowed; execution awaits freeze.
 [experiment]
-status = "provisional"
+status = "frozen"
 comparison = "../comparison.toml"
 populations = [500, 750, 1000]
 leader_shares = [0.01, 0.03, 0.05]
@@ -12,3 +12,10 @@ reference_share = 0.03
 main_reach = 0.04
 reach_levels = [0.0, 0.04, 0.08]
 topologies = ["ba", "er", "ws", "sbm"]
+
+# Proposed generator settings; included in every resolved run configuration.
+[topology]
+ws_k = 6
+ws_rewire_probability = 0.10
+sbm_blocks = 4
+sbm_within_share = 0.70

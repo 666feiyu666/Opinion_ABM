@@ -7,6 +7,8 @@ from math import isfinite
 from pathlib import Path
 import tomllib
 
+from opinion_model.scenarios.topology import TopologyConfig
+
 from opinion_model.shared import SimulationConfig
 
 
@@ -25,7 +27,11 @@ class NullInitializationConfig:
     ordinary_mean_alpha: float
     ordinary_concentration: float
 
+    topology: TopologyConfig = TopologyConfig()
+
     def __post_init__(self) -> None:
+        if not isinstance(self.topology, TopologyConfig):
+            raise TypeError("topology must be a TopologyConfig")
         if (
             isinstance(self.network_m, bool)
             or not isinstance(self.network_m, int)
@@ -50,6 +56,7 @@ class NullConfig:
             raise TypeError(
                 "initialization must be a NullInitializationConfig."
             )
+        self.initialization.topology.parameters(self.simulation.agent_count, self.initialization.network_m)
         if self.initialization.network_m >= self.simulation.agent_count:
             raise ValueError("network_m must be below agent_count.")
         if (
@@ -127,6 +134,7 @@ def load_null_experiment_config(path: str | Path) -> NullExperimentConfig:
         ),
         initialization=NullInitializationConfig(
             network_m=int(initialization["network_m"]),
+            topology=TopologyConfig(**initialization.get("topology", {})),
             ordinary_mean_alpha=float(initialization["ordinary_mean_alpha"]),
             ordinary_concentration=float(
                 initialization["ordinary_concentration"]

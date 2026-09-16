@@ -10,6 +10,8 @@ from opinion_model.visualization.results import load_figure_data, render_figures
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--batch", type=Path, required=True)
+    parser.add_argument("--reference-only", action="store_true",
+                        help="Plot the completed main reference condition while the full grid is paused")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--population", type=int)
     parser.add_argument("--topology")
@@ -20,7 +22,8 @@ def main():
     parser.add_argument("--dpi", type=int, default=180)
     args = parser.parse_args()
     data = load_figure_data(args.batch, population=args.population, topology=args.topology,
-                            leader_share=args.leader_share, reach=args.reach, through_round=args.through_round)
+                            leader_share=args.leader_share, reach=args.reach, through_round=args.through_round,
+                            reference_only=args.reference_only)
     print(render_figures(data, args.output, tuple(args.formats), args.dpi))
 
 

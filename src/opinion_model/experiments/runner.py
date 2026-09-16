@@ -17,7 +17,9 @@ import numpy as np
 import pandas as pd
 
 from opinion_model.experiments.analysis import endpoint_metrics, paired_contrasts, summarize_contrasts
-from opinion_model.experiments.observations import initialization_record, role_channel_metrics
+from opinion_model.experiments.observations import (
+    initialization_record, role_channel_metrics, structural_metrics, STRUCTURE_DEFINITIONS,
+)
 from opinion_model.experiments.planning import resolved_config
 from opinion_model.scenarios.baseline.experiment import run_baseline_condition
 from opinion_model.scenarios.null.experiment import run_null_condition
@@ -138,18 +140,19 @@ def load_completed(batch, spec, config, fingerprint):
     return frame, record, metric_path
 
 
-def execute_one(batch, spec, config, threshold, code):
+def execute_one(batch, spec, config, threshold, code, analysis_round=50):
     started = utc_now()
     tick = time.perf_counter()
     arguments = {"extremism_threshold": threshold}
     if spec.leader_share is not None:
         arguments["orientation"] = spec.orientation
     run = RUNNERS[spec.scenario](config, **arguments)
-    frame = role_channel_metrics(run)
+    frame = structural_metrics(run, role_channel_metrics(run), analysis_round)
     for name, value in {"run_id": spec.run_id, **asdict(spec)}.items():
         frame[name] = value
     validate_rounds(frame, spec)
     initialization = initialization_record(run)
+    initialization["topology_parameters"] = config.initialization.topology.parameters(spec.population, config.initialization.network_m)
     streams = matched_initialization_streams(RandomStreams(spec.seed).initialization())
     ordinary = ordinary_agent_states(spec.population, config.initialization.ordinary_mean_alpha,
                                      config.initialization.ordinary_concentration, streams.ordinary_belief)
@@ -161,10 +164,16 @@ def execute_one(batch, spec, config, threshold, code):
     metric_path, manifest_path = run_paths(batch, spec)
     metric_path.parent.mkdir(parents=True, exist_ok=True)
     write_csv(metric_path, frame)
+    network = run.initialization.state.network.neighbors_by_agent
+    in_degree = dict.fromkeys(network, 0)
+    for producers in network.values():
+        for producer in producers:
+            in_degree[producer] += 1
     initial_agents = pd.DataFrame([
         {"agent_id": i, "a": a.belief.a, "b": a.belief.b,
          "pre_leader_a": ordinary[i].belief.a, "pre_leader_b": ordinary[i].belief.b,
-         "is_leader": i in leaders}
+         "is_leader": i in leaders, "initial_in_degree": in_degree[i],
+         "initial_out_degree": len(network[i])}
         for i, a in sorted(run.initialization.state.agents.items())])
     agents_path = metric_path.with_name(f"seed-{spec.seed}__initial_agents.csv")
     write_csv(agents_path, initial_agents)
@@ -182,41 +191,45 @@ def execute_one(batch, spec, config, threshold, code):
 
 def export_plan(batch, design, plan, kind, template):
     batch.mkdir(parents=True, exist_ok=True)
-    specs = [plan.runs[i] for i in sorted(plan.required_ids(kind))]
-    frame = pd.DataFrame([{"run_id": s.run_id, **asdict(s), "reuse": s.owner != kind}
+    reference_ids = set(plan.horizon_ids)
+    specs = [plan.runs[i] for i in sorted(plan.required_ids(kind), key=lambda i: (i not in reference_ids, i))]
+    frame = pd.DataFrame([{"run_id": s.run_id, **asdict(s), "reuse": s.owner != kind,
+                           "reference_condition": s.run_id in reference_ids}
                           for s in specs])
     write_csv(batch / f"{kind}_run_plan.csv", frame)
     comparisons = plan.comparisons.loc[plan.comparisons.experiment == kind]
     if kind != "horizon":
         write_csv(batch / f"{kind}_comparison_plan.csv", comparisons)
     write_json(batch / f"{kind}_resolved_configs.json",
-               {s.run_id: {"topology": s.topology, "config": asdict(resolved_config(template, s)),
-                           "execution_supported": s.topology == "ba"} for s in specs})
+               {s.run_id: {"topology": s.topology, "config": asdict(resolved_config(template, s, design.topology_settings)),
+                           "execution_supported": True} for s in specs})
     write_json(batch / f"{kind}_plan_summary.json", {
         "status": design.status, "analysis_round": design.rounds,
         "total_study_unique_runs": len(plan.runs),
         "unique_runs_by_owner": plan.run_frame().owner.value_counts().to_dict(),
         "required_runs": len(specs), "new_runs": sum(s.owner == kind for s in specs),
         "reused_runs": sum(s.owner != kind for s in specs),
-        "topology_execution": "BA only in stages I-II; ER/WS/SBM generators are deferred",
+        "topology_execution": "BA, ER, WS, SBM; independently oriented undirected graphs",
     })
     return specs
 
 
-def execute_batch(batch, design, plan, kind, template, *, resume=False, source_batch=None, max_runs=None):
+def execute_batch(batch, design, plan, kind, template, *, resume=False, source_batch=None, max_runs=None, reference_only=False):
     batch = Path(batch).resolve()
     if design.status == "provisional":
         raise ValueError("Provisional retained settings are plan-only. Use a pilot config until reviewed and frozen.")
     if max_runs is not None and max_runs < 1:
         raise ValueError("max_runs must be positive")
-    required = [plan.runs[i] for i in sorted(plan.required_ids(kind))]
-    if any(s.topology != "ba" for s in required):
-        raise NotImplementedError("Topology generators are a later stage; this runner will not substitute BA.")
+    if reference_only and kind != "main":
+        raise ValueError("reference_only applies only to the main batch")
+    reference_ids = set(plan.horizon_ids)
+    required = [plan.runs[i] for i in sorted(plan.required_ids(kind),
+                key=lambda i: (i not in reference_ids, i))]
     if any(s.owner != kind for s in required) and source_batch is None:
         raise ValueError("Supporting execution requires --source-batch for shared main controls")
     code = code_record()
     identity = {"design": asdict(design), "kind": kind, "code_fingerprint": code["fingerprint"],
-                "configs": {s.run_id: asdict(resolved_config(template, s)) for s in required},
+                "configs": {s.run_id: asdict(resolved_config(template, s, design.topology_settings)) for s in required},
                 "extremism_threshold": template.extremism_threshold}
     identity_hash = digest(identity)
     manifest_path = batch / f"{kind}_batch_manifest.json"
@@ -232,6 +245,7 @@ def execute_batch(batch, design, plan, kind, template, *, resume=False, source_b
         manifest = {"identity_hash": identity_hash, "created_at": utc_now(), "kind": kind,
                     "design_status": design.status, "analysis_round": design.rounds,
                     "expected_seeds": list(design.seeds), "code": code, "execution": "sequential",
+                    "structural_observation_definitions": STRUCTURE_DEFINITIONS,
                     "source_batch": str(Path(source_batch).resolve()) if source_batch else None}
         with zipfile.ZipFile(batch / f"{kind}_source_snapshot.zip", "w", zipfile.ZIP_DEFLATED) as archive:
             for name in code["files"]:
@@ -245,15 +259,18 @@ def execute_batch(batch, design, plan, kind, template, *, resume=False, source_b
         # Validate reusable source runs before doing any new simulation work.
         for spec in required:
             if spec.owner != kind:
-                source = load_completed(Path(source_batch), spec, resolved_config(template, spec), code["fingerprint"])
+                source = load_completed(Path(source_batch), spec, resolved_config(template, spec, design.topology_settings), code["fingerprint"])
                 if source is None:
                     raise ValueError(f"Missing completed main control: {spec.run_id}")
         for index, spec in enumerate(required, 1):
-            config = resolved_config(template, spec)
+            config = resolved_config(template, spec, design.topology_settings)
             origin = batch if spec.owner == kind else Path(source_batch)
             result = load_completed(origin, spec, config, code["fingerprint"])
             action = "reused" if spec.owner != kind else "resumed"
             if result is None:
+                if reference_only and spec.run_id not in reference_ids:
+                    status_rows.append({"run_id": spec.run_id, "status": "pending"})
+                    continue
                 if max_runs is not None and new_count >= max_runs:
                     status_rows.append({"run_id": spec.run_id, "status": "pending"})
                     continue
@@ -261,7 +278,7 @@ def execute_batch(batch, design, plan, kind, template, *, resume=False, source_b
                 with (batch / f"{kind}_attempts.jsonl").open("a", encoding="utf-8") as stream:
                     stream.write(json.dumps({"run_id": spec.run_id, "event": "started", "at": utc_now()}) + "\n")
                 try:
-                    result = execute_one(batch, spec, config, template.extremism_threshold, code)
+                    result = execute_one(batch, spec, config, template.extremism_threshold, code, design.rounds)
                 except Exception as error:
                     with (batch / f"{kind}_attempts.jsonl").open("a", encoding="utf-8") as stream:
                         stream.write(json.dumps({"run_id": spec.run_id, "event": "failed", "at": utc_now(), "error": repr(error)}) + "\n")
@@ -280,24 +297,37 @@ def execute_batch(batch, design, plan, kind, template, *, resume=False, source_b
                                 "duration_seconds": record["duration_seconds"],
                                 "process_lifetime_peak_working_set_bytes": record["process_lifetime_peak_working_set_bytes"]})
             write_csv(batch / f"{kind}_run_status.csv", pd.DataFrame(status_rows))
-        if len(collected) != len(required):
-            manifest.update(status="paused", completed_runs=len(collected), required_runs=len(required))
-            return manifest
-        # The matching unit is population/topology/seed, not leader share or direction.
+        # Validate matching even for a partial batch before publishing reference results.
         matching = {}
-        for spec, record in zip(required, records):
+        for record in records:
+            spec = plan.runs[record["run_id"]]
             key = (spec.population, spec.topology, spec.seed)
             signatures = (record["initial_network_sha256"], record["pre_leader_beliefs_sha256"])
             if matching.setdefault(key, signatures) != signatures:
                 raise AssertionError("Cross-scenario initialization mismatch")
+        if kind == "main" and reference_ids <= {r["run_id"] for r in records}:
+            reference_frames = [f for f in collected if f.run_id.iloc[0] in reference_ids]
+            reference_rounds = pd.DataFrame.from_records([
+                row for frame in reference_frames for row in frame.to_dict("records")])
+            reference_rounds["design_status"] = design.status
+            export_reference_results(batch, design, plan, reference_rounds)
+            manifest["reference_status"] = "complete"
+            manifest["reference_runs"] = len(reference_ids)
+        write_csv(batch / f"{kind}_source_runs.csv", pd.DataFrame(sources))
+        write_csv(batch / f"{kind}_initialization_checks.csv", pd.DataFrame([
+            {"run_id": r["run_id"], "topology": r["spec"]["topology"],
+             "population": r["spec"]["population"], "seed": r["spec"]["seed"],
+             "expected_edges": r["topology_parameters"]["expected_edges"],
+             **{key: r[key] for key in ("initial_network_sha256", "pre_leader_beliefs_sha256",
+                                        "realized_leader_count", "realized_leader_share", "initial_edge_count")}}
+            for r in records]))
+        if len(collected) != len(required):
+            manifest.update(status="paused", completed_runs=len(collected), required_runs=len(required))
+            return manifest
         rounds = pd.DataFrame.from_records([row for frame in collected for row in frame.to_dict("records")])
         rounds["design_status"] = design.status
         write_csv(batch / f"{kind}_round_metrics.csv", rounds)
-        write_csv(batch / f"{kind}_source_runs.csv", pd.DataFrame(sources))
-        write_csv(batch / f"{kind}_initialization_checks.csv", pd.DataFrame([
-            {"run_id": r["run_id"], **{key: r[key] for key in ("initial_network_sha256", "pre_leader_beliefs_sha256",
-                                                              "realized_leader_count", "realized_leader_share", "initial_edge_count")}}
-            for r in records]))
+        write_csv(batch / f"{kind}_network_snapshots.csv", rounds.loc[rounds.structural_top_count.notna()])
         endpoint = endpoint_metrics(rounds, design.rounds)
         write_csv(batch / f"{kind}_round{design.rounds}_outcomes.csv", endpoint)
         if kind == "horizon":
@@ -321,3 +351,26 @@ def execute_batch(batch, design, plan, kind, template, *, resume=False, source_b
         write_csv(batch / f"{kind}_run_status.csv", pd.DataFrame(status_rows))
         write_json(manifest_path, manifest)
     return manifest
+
+
+def export_reference_results(batch, design, plan, rounds):
+    """Publish only a complete reference condition, separately from the full grid."""
+    prefix = "main_reference"
+    write_csv(batch / f"{prefix}_round_metrics.csv", rounds)
+    write_csv(batch / f"{prefix}_network_snapshots.csv", rounds.loc[rounds.structural_top_count.notna()])
+    endpoint = endpoint_metrics(rounds, design.rounds)
+    write_csv(batch / f"{prefix}_round{design.rounds}_outcomes.csv", endpoint)
+    comparisons = plan.comparisons.loc[
+        (plan.comparisons.experiment == "main")
+        & (plan.comparisons.population == design.reference_population)
+        & (plan.comparisons.leader_share == design.reference_share)]
+    contrasts = paired_contrasts(endpoint, comparisons)
+    summary = summarize_contrasts(contrasts, design.seeds)
+    contrasts["design_status"] = design.status
+    summary["design_status"] = design.status
+    write_csv(batch / f"{prefix}_round{design.rounds}_seed_contrasts.csv", contrasts)
+    write_csv(batch / f"{prefix}_round{design.rounds}_effect_summary.csv", summary)
+    checkpoints = sorted({r for r in (30, design.rounds, 75, 100, design.extended_rounds)
+                          if r <= design.extended_rounds})
+    write_csv(batch / f"{prefix}_horizon_checkpoint_outcomes.csv",
+              pd.concat([endpoint_metrics(rounds, r) for r in checkpoints], ignore_index=True))

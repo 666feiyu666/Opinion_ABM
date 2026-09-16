@@ -13,7 +13,7 @@ from opinion_model.core import (
     WorldState,
 )
 from opinion_model.scenarios.matched_initialization import (
-    directed_ba_network,
+    directed_network,
     leader_orientations,
     leaders_by_in_degree,
     matched_initialization_streams,
@@ -119,11 +119,12 @@ def initialize_opleader(
     initialization = config.initialization
     simulation = config.simulation
     streams = matched_initialization_streams(rng)
-    network = directed_ba_network(
+    network = directed_network(
         simulation.agent_count,
         initialization.network_m,
         streams.topology_seed,
         streams.edge_direction,
+        initialization.topology,
     )
     leader_ids = leaders_by_in_degree(
         network,

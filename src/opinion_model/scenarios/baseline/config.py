@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Literal, TypeAlias, cast
 import tomllib
 
+from opinion_model.scenarios.topology import TopologyConfig
+
 from opinion_model.opleader import (
     OpinionLeaderMessageAggregation,
     OpinionLeaderMessageOrigination,
@@ -49,7 +51,11 @@ class BaselineInitializationConfig:
     leader_positive_a: float
     leader_positive_b: float
 
+    topology: TopologyConfig = TopologyConfig()
+
     def __post_init__(self) -> None:
+        if not isinstance(self.topology, TopologyConfig):
+            raise TypeError("topology must be a TopologyConfig")
         if (
             isinstance(self.network_m, bool)
             or not isinstance(self.network_m, int)
@@ -163,6 +169,7 @@ class BaselineConfig:
             raise TypeError(
                 "initialization must be a BaselineInitializationConfig."
             )
+        self.initialization.topology.parameters(self.simulation.agent_count, self.initialization.network_m)
         if self.initialization.network_m >= self.simulation.agent_count:
             raise ValueError("network_m must be below agent_count.")
         self.initialization.leader_count(self.simulation.agent_count)
@@ -245,6 +252,7 @@ def load_baseline_experiment_config(
         ),
         initialization=BaselineInitializationConfig(
             network_m=int(initialization["network_m"]),
+            topology=TopologyConfig(**initialization.get("topology", {})),
             leader_share=float(initialization["leader_share"]),
             ordinary_mean_alpha=float(initialization["ordinary_mean_alpha"]),
             ordinary_concentration=float(

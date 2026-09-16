@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-import networkx as nx
+from opinion_model.scenarios.topology import TopologyConfig, undirected_graph
 import numpy as np
 
 from opinion_model.core import AgentState, BetaBelief, NetworkState
@@ -34,18 +34,15 @@ def matched_initialization_streams(
     )
 
 
-def directed_ba_network(
+def directed_network(
     agent_count: int,
     network_m: int,
     topology_seed: int,
     edge_direction_rng: np.random.Generator,
+    topology: TopologyConfig = TopologyConfig(),
 ) -> NetworkState:
     """Create one directed information-access edge per undirected BA edge."""
-    graph = nx.barabasi_albert_graph(
-        agent_count,
-        network_m,
-        seed=topology_seed,
-    )
+    graph = undirected_graph(agent_count, network_m, topology_seed, topology)
     followed_by_agent = {agent_id: set() for agent_id in graph.nodes}
     for endpoint_a, endpoint_b in sorted(graph.edges):
         if edge_direction_rng.random() < 0.5:
@@ -59,6 +56,11 @@ def directed_ba_network(
             for agent_id, producer_ids in followed_by_agent.items()
         }
     )
+
+
+def directed_ba_network(agent_count, network_m, topology_seed, edge_direction_rng):
+    """Backward-compatible BA entry point with the unchanged random stream."""
+    return directed_network(agent_count, network_m, topology_seed, edge_direction_rng)
 
 
 def ordinary_agent_states(
@@ -144,6 +146,7 @@ def leader_orientations(
 __all__ = [
     "MatchedInitializationStreams",
     "directed_ba_network",
+    "directed_network",
     "leader_orientations",
     "leaders_by_in_degree",
     "matched_initialization_streams",

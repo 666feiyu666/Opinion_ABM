@@ -17,7 +17,11 @@ def main(supporting=False):
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--source-batch", type=Path)
     parser.add_argument("--max-runs", type=int, help="Pause after this many newly completed runs")
+    parser.add_argument("--reference-only", action="store_true",
+                        help="Main only: complete reference runs, then pause the unchanged full-grid batch")
     args = parser.parse_args()
+    if args.reference_only and supporting:
+        parser.error("--reference-only applies only to the main experiment")
     config, kind = args.config.resolve(), "main"
     if supporting:
         support = tomllib.loads(config.read_text(encoding="utf-8"))["support"]
@@ -30,7 +34,8 @@ def main(supporting=False):
     template = validate_plan(design, plan)
     if args.execute:
         result = execute_batch(args.output, design, plan, kind, template, resume=args.resume,
-                               source_batch=args.source_batch, max_runs=args.max_runs)
+                               source_batch=args.source_batch, max_runs=args.max_runs,
+                               reference_only=args.reference_only)
         print(f"{kind}: {result['status']} — {args.output.resolve()}")
     else:
         if args.output.exists() and any(args.output.iterdir()):

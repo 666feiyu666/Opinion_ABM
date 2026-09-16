@@ -17,7 +17,7 @@ from opinion_model.experiments.planning import load_design, build_plan, validate
 from opinion_model.experiments.runner import execute_batch, execute_one, code_record, run_paths, load_completed
 from opinion_model.scenarios.baseline.experiment import run_baseline_condition
 from opinion_model.scenarios.platform.experiment import run_platform_condition
-from opinion_model.experiments.observations import role_channel_metrics
+from opinion_model.experiments.observations import role_channel_metrics, structural_metrics
 
 
 class PlanningTests(unittest.TestCase):
@@ -117,6 +117,11 @@ class ObservationTests(unittest.TestCase):
         self.assertTrue(frame.edge_count.diff().iloc[1:].eq((frame.accepted_addition_count-frame.accepted_removal_count).iloc[1:]).all())
         # Building the role observer repeatedly cannot mutate the retained states.
         pd.testing.assert_frame_equal(frame, role_channel_metrics(run100))
+        observed100 = structural_metrics(run100, frame, 50)
+        observed50 = structural_metrics(run50, role_channel_metrics(run50), 50)
+        pd.testing.assert_frame_equal(observed100.iloc[:51].reset_index(drop=True), observed50)
+        self.assertEqual(set(observed100.loc[observed100.structural_top_count.notna(), "round"]),
+                         {0, 10, 30, 50, 75, 100})
 
     def test_neutral_leaders_give_same_platform_diagnostics(self):
         # Keep the leader initialization neutral too: use a shared initializer through scheduler.
@@ -201,14 +206,14 @@ class PersistenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 execute_batch(batch, design, plan, "main", template, resume=True)
 
-    def test_formal_provisional_and_unimplemented_topology_fail_before_running(self):
+    def test_formal_provisional_and_missing_topology_sources_fail_before_running(self):
         design = load_design(ROOT / "configs/main_experiment/main_grid.toml")
         plan = build_plan(design)
         template = validate_plan(design, plan)
         with tempfile.TemporaryDirectory() as temp:
             with self.assertRaises(ValueError):
                 execute_batch(Path(temp), design, plan, "main", template)
-            with self.assertRaises(NotImplementedError):
+            with self.assertRaises(ValueError):
                 execute_batch(Path(temp), replace(design, status="pilot"), plan, "topology", template)
 
 

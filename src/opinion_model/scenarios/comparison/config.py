@@ -46,6 +46,7 @@ def _shared_simulation_signature(config: SimulationConfig) -> tuple[object, ...]
 def _ordinary_initialization_signature(config: object) -> tuple[object, ...]:
     return (
         getattr(config, "network_m"),
+        getattr(config, "topology"),
         getattr(config, "ordinary_mean_alpha"),
         getattr(config, "ordinary_concentration"),
     )

@@ -9,6 +9,7 @@ import tomllib
 import pandas as pd
 
 from opinion_model.scenarios.comparison.config import load_comparison_experiment_config
+from opinion_model.scenarios.topology import TopologyConfig
 
 ORIENTATIONS = ("positive", "negative", "balanced_positive", "balanced_negative")
 
@@ -28,8 +29,11 @@ class Design:
     reach: float
     reach_levels: tuple[float, ...]
     topologies: tuple[str, ...]
+    topology_settings: TopologyConfig = TopologyConfig()
 
     def __post_init__(self):
+        if not isinstance(self.topology_settings, TopologyConfig) or self.topology_settings.family != "ba":
+            raise ValueError("Study topology settings must use the BA reference family")
         for name in ("populations", "shares", "seeds", "reach_levels", "topologies"):
             values = getattr(self, name)
             if not values or len(set(values)) != len(values):
@@ -59,14 +63,16 @@ class Design:
 
 def load_design(path):
     source = Path(path).resolve()
-    raw = tomllib.loads(source.read_text(encoding="utf-8"))["experiment"]
+    document = tomllib.loads(source.read_text(encoding="utf-8"))
+    raw = document["experiment"]
     return Design(source=source, comparison_path=(source.parent / raw["comparison"]).resolve(),
                   status=raw["status"], populations=tuple(raw["populations"]),
                   shares=tuple(raw["leader_shares"]), seeds=tuple(raw["seeds"]),
                   rounds=raw["analysis_round"], extended_rounds=raw["extended_rounds"],
                   reference_population=raw["reference_population"],
                   reference_share=raw["reference_share"], reach=raw["main_reach"],
-                  reach_levels=tuple(raw["reach_levels"]), topologies=tuple(raw["topologies"]))
+                  reach_levels=tuple(raw["reach_levels"]), topologies=tuple(raw["topologies"]),
+                  topology_settings=TopologyConfig(**document.get("topology", {})))
 
 
 def number(value):
@@ -158,16 +164,18 @@ def build_plan(design):
     return StudyPlan(runs, pd.DataFrame(comparisons), tuple(sorted(horizon_ids)))
 
 
-def resolved_config(template, spec):
+def resolved_config(template, spec, topology_settings=None):
     attr = "platform_case" if spec.scenario == "platform" else spec.scenario
     config = getattr(getattr(template, spec.scenario), attr)
     simulation = replace(config.simulation, agent_count=spec.population,
                          rounds=spec.simulation_rounds, seed=spec.seed,
                          consumption_capacity=(config.simulation.consumption_capacity
                                                if spec.reach is not None else spec.population - 1))
-    changes = {"simulation": simulation}
+    topology = replace(topology_settings or config.initialization.topology, family=spec.topology)
+    initialization = replace(config.initialization, topology=topology)
+    changes = {"simulation": simulation, "initialization": initialization}
     if spec.leader_share is not None:
-        changes["initialization"] = replace(config.initialization, leader_share=spec.leader_share)
+        changes["initialization"] = replace(initialization, leader_share=spec.leader_share)
     if spec.reach is not None:
         changes["platform"] = replace(config.platform, out_of_network_availability_probability=spec.reach)
     return replace(config, **changes)
@@ -176,7 +184,7 @@ def resolved_config(template, spec):
 def validate_plan(design, plan):
     template = load_comparison_experiment_config(design.comparison_path)
     for spec in plan.runs.values():
-        resolved_config(template, spec)
+        resolved_config(template, spec, design.topology_settings)
     if plan.comparisons.duplicated(["experiment", "population", "topology", "leader_share", "reach", "seed", "orientation"]).any():
         raise ValueError("Duplicate comparison")
     return template

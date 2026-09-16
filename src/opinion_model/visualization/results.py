@@ -151,15 +151,23 @@ class FigureData:
         return f"{status}{self.manifest['kind']}__{self.setting.slug}"
 
 
-def load_figure_data(batch, *, population=None, topology=None, leader_share=None, reach=None, through_round=None):
+def load_figure_data(batch, *, population=None, topology=None, leader_share=None, reach=None, through_round=None,
+                     reference_only=False):
     batch = Path(batch).resolve()
     paths = list(batch.glob("*_batch_manifest.json"))
     if len(paths) != 1:
         raise ValueError("Expected one completed batch manifest")
     manifest_path = paths[0]
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest["status"] != "complete" or manifest["design_status"] not in ("pilot", "frozen"):
+    reference_complete = (reference_only and manifest["kind"] == "main"
+                          and manifest.get("reference_status") == "complete"
+                          and manifest["status"] in ("paused", "complete"))
+    if reference_only and not reference_complete:
+        raise ValueError("Figures require a complete main reference condition")
+    if (manifest["status"] != "complete" and not reference_complete) or manifest["design_status"] not in ("pilot", "frozen"):
         raise ValueError("Figures require a complete pilot or frozen batch")
+    if reference_only:
+        manifest = {**manifest, "kind": "main_reference"}
     kind, endpoint = manifest["kind"], manifest["analysis_round"]
     rounds_path = batch / f"{kind}_round_metrics.csv"
     frame = read_table(rounds_path)

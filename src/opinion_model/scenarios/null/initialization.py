@@ -9,7 +9,7 @@ import numpy as np
 
 from opinion_model.core import WorldState
 from opinion_model.scenarios.matched_initialization import (
-    directed_ba_network,
+    directed_network,
     matched_initialization_streams,
     ordinary_agent_states,
 )
@@ -84,11 +84,12 @@ def initialize_null(
     initialization = config.initialization
     simulation = config.simulation
     streams = matched_initialization_streams(rng)
-    network = directed_ba_network(
+    network = directed_network(
         simulation.agent_count,
         initialization.network_m,
         streams.topology_seed,
         streams.edge_direction,
+        initialization.topology,
     )
     agents = ordinary_agent_states(
         simulation.agent_count,

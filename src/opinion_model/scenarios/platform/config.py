@@ -7,6 +7,8 @@ from math import isfinite
 from pathlib import Path
 import tomllib
 
+from opinion_model.scenarios.topology import TopologyConfig
+
 from opinion_model.platform import PlatformMessageSelection, PlatformNetworkUpdate
 from opinion_model.shared import SimulationConfig
 
@@ -26,7 +28,11 @@ class PlatformInitializationConfig:
     ordinary_mean_alpha: float
     ordinary_concentration: float
 
+    topology: TopologyConfig = TopologyConfig()
+
     def __post_init__(self) -> None:
+        if not isinstance(self.topology, TopologyConfig):
+            raise TypeError("topology must be a TopologyConfig")
         if (
             isinstance(self.network_m, bool)
             or not isinstance(self.network_m, int)
@@ -92,6 +98,7 @@ class PlatformConfig:
             raise TypeError(
                 "initialization must be a PlatformInitializationConfig."
             )
+        self.initialization.topology.parameters(self.simulation.agent_count, self.initialization.network_m)
         if self.initialization.network_m >= self.simulation.agent_count:
             raise ValueError("network_m must be below agent_count.")
         if not isinstance(self.platform, PlatformMechanismConfig):
@@ -164,6 +171,7 @@ def load_platform_experiment_config(
         ),
         initialization=PlatformInitializationConfig(
             network_m=int(initialization["network_m"]),
+            topology=TopologyConfig(**initialization.get("topology", {})),
             ordinary_mean_alpha=float(initialization["ordinary_mean_alpha"]),
             ordinary_concentration=float(
                 initialization["ordinary_concentration"]
